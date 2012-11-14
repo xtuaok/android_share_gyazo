@@ -22,5 +22,5 @@
     <string name="copy_gyazo_url_summary">Copy gyazo URL text into clipboard</string>
     <string name="open_url_browser_summary">Open gyazo URL with web browser</string>
     <string name="share_url_text_summary">Share gayzo URL as text intent</string>
-    
+    <string name="failed_to_upload">Failed to upload</string>
 </resources>

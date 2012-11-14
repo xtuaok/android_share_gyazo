@@ -24,5 +24,5 @@
     <string name="copy_gyazo_url_summary">Gyazoから取得した画像URLをクリップボードにコピーする</string>
     <string name="open_url_browser_summary">Gyazoから取得した画像URLをブラウザで開く</string>
     <string name="share_url_text_summary">Gyazoから取得した画像URLをテキストとして共有する</string>
-    
+    <string name="failed_to_upload">アップロードに失敗しました</string>
 </resources>
