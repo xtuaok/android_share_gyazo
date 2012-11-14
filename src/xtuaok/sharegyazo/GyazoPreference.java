@@ -26,7 +26,6 @@ import android.preference.PreferenceActivity;
 import android.preference.PreferenceManager;
 
 public class GyazoPreference extends PreferenceActivity {
-    // private Context mContext;
     public static final String SHARED_PREF = GyazoPreference.class.toString();
     public static final String PREF_GYAZO_CGI    = "gyazo_cgi_url";
     public static final String PREF_GYAZO_ID     = "gyazo_cgi_id";
