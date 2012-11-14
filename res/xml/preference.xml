@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android" >
+    <PreferenceCategory android:title="Gyazo CGI" android:key="category_gyazo_cgi">
+        <EditTextPreference
+            android:positiveButtonText="@string/ok"
+            android:negativeButtonText="@string/cancel"
+            android:dialogMessage="@string/message_gyazo_uploader"
+            android:dialogTitle="@string/dialog_gyazo_uploader"
+            android:key="gyazo_cgi_url"
+            android:title="Gyazo URL"
+            android:defaultValue="http://gyazo.com/upload.cgi"/>
+        <EditTextPreference
+            android:positiveButtonText="@string/ok"
+            android:negativeButtonText="@string/cancel"
+            android:dialogMessage="@string/message_gyazo_id"
+            android:dialogTitle="@string/dialog_gyazo_id"
+            android:key="gyazo_cgi_id"
+            android:title="Gyazo ID" />
+    </PreferenceCategory>
+    <PreferenceCategory
+        android:title="@string/category_behavior_url"
+        android:key="cateogry_gyazo_url">
+        <CheckBoxPreference
+            android:title="@string/copy_gyazo_url_title"
+            android:summary="@string/copy_gyazo_url_summary"
+            android:key="copy_gyazo_url"
+            android:defaultValue="true" />
+        <CheckBoxPreference
+            android:title="@string/open_url_browser_title"
+            android:summary="@string/open_url_browser_summary"
+            android:key="open_url_browser"/>
+        <CheckBoxPreference
+            android:title="@string/share_url_text_title"
+            android:summary="@string/share_url_text_summary"
+            android:key="share_url_text"/>
+    </PreferenceCategory>
+
+</PreferenceScreen>

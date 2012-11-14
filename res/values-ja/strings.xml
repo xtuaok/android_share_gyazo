@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <string name="app_name">ShareGyazo</string>
+    <string name="title_activity_share_gyazo">ShareGyazo</string>
+    <string name="toast_copy_url">画像URLをコピーしました</string>
+    <string name="dialog_title_wait">お待ち下さい</string>
+    <string name="dialog_message_uploading">アップロード中&#8230;</string>
+    <string name="title_activity_preference">ShareGyazo設定</string>
+
+    <string name="ok">OK</string>
+    <string name="cancel">キャンセル</string>
+    
+    <string name="dialog_gyazo_uploader">GyazoアップローダURL</string>
+    <string name="message_gyazo_uploader">GyazoアップローダCGIのURL</string>
+    <string name="dialog_gyazo_id">Gyazoアップローダで使うID</string>
+    <string name="message_gyazo_id">わからなければ空のままに</string>
+    
+    <string name="category_behavior_url">取得したGyazo URLの挙動</string>
+    
+    <string name="copy_gyazo_url_title">URLをコピー</string>
+    <string name="open_url_browser_title">URLを開く</string>
+    <string name="share_url_text_title">URLを共有</string>
+    <string name="copy_gyazo_url_summary">Gyazoから取得した画像URLをクリップボードにコピーする</string>
+    <string name="open_url_browser_summary">Gyazoから取得した画像URLをブラウザで開く</string>
+    <string name="share_url_text_summary">Gyazoから取得した画像URLをテキストとして共有する</string>
+    
+</resources>
