@@ -42,9 +42,21 @@ public class GyazoPreference extends PreferenceActivity {
         EditTextPreference editTextPref;
         editTextPref = (EditTextPreference)findPreference(PREF_GYAZO_CGI);
         editTextPref.setSummary(editTextPref.getText());
+        editTextPref.setOnPreferenceChangeListener(new OnPreferenceChangeListener() {
+			public boolean onPreferenceChange(Preference preference, Object newValue) {
+				((EditTextPreference)preference).setSummary(newValue.toString());
+				return true;
+			}
+		});
 
         editTextPref = (EditTextPreference)findPreference(PREF_GYAZO_ID);
         editTextPref.setSummary(editTextPref.getText());
+        editTextPref.setOnPreferenceChangeListener(new OnPreferenceChangeListener() {
+			public boolean onPreferenceChange(Preference preference, Object newValue) {
+				((EditTextPreference)preference).setSummary(newValue.toString());
+				return true;
+			}
+		});
         
         if (prefs.getBoolean(PREF_OPEN_BROWSER, false) && 
             prefs.getBoolean(PREF_SHARE_TEXT, false)) {
