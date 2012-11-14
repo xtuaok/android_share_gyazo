@@ -17,10 +17,8 @@
 package xtuaok.sharegyazo;
 
 import java.io.ByteArrayOutputStream;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -32,7 +30,6 @@ import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
-import android.R.integer;
 import android.app.Activity;
 import android.app.ProgressDialog;
 import android.content.Context;
@@ -40,12 +37,9 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
-import android.graphics.Rect;
 import android.graphics.Bitmap.CompressFormat;
 import android.text.ClipboardManager;
-import android.util.DisplayMetrics;
 import android.util.Log;
-import android.view.animation.ScaleAnimation;
 import android.widget.Toast;
 
 public class ShareGyazo extends Activity {
