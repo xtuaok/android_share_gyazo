@@ -114,7 +114,6 @@ public class ShareGyazo extends Activity {
                 if (options.outMimeType.endsWith("png")) {
                     byte[] img_byte = readBytes(in);
                     in.close();
-                    bitmap.recycle();
                     result = postGyazo(cgi, img_byte);
                 } else {
                     // FIXME: more better solution for OutOfMemory.
