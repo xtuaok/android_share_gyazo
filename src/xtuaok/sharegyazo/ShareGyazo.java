@@ -20,6 +20,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -31,13 +32,20 @@ import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
+import android.R.integer;
 import android.app.Activity;
 import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.graphics.Rect;
+import android.graphics.Bitmap.CompressFormat;
 import android.text.ClipboardManager;
+import android.util.DisplayMetrics;
 import android.util.Log;
+import android.view.animation.ScaleAnimation;
 import android.widget.Toast;
 
 public class ShareGyazo extends Activity {
@@ -50,6 +58,8 @@ public class ShareGyazo extends Activity {
     private boolean mCopyURL;
     private boolean mOpenURL;
     private boolean mShareURL;
+
+    private static final int MAX_IMAGE_PIXEL = 1920; // HD
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -76,6 +86,7 @@ public class ShareGyazo extends Activity {
 
     public class UploadAsyncTask  extends AsyncTask<String, Integer, String> {
         private ProgressDialog mDialog;
+        private String mErrorMessage = "";
 
         private String postGyazo(String cgi, byte[] imgData) throws ClientProtocolException, IOException {
             List<NameValuePair> nValuePairs = new ArrayList<NameValuePair>();
@@ -95,18 +106,53 @@ public class ShareGyazo extends Activity {
             String result = "";
             String cgi = params[0];
             Uri uri = Uri.parse(params[1]);
-            byte[] img_byte;
             InputStream in;
+
             try {
                 in = getContentResolver().openInputStream(uri);
-                img_byte = readBytes(in);
-                result = postGyazo(cgi, img_byte);
-            } catch (FileNotFoundException e1) {
+                BitmapFactory.Options options = new BitmapFactory.Options();
+                options.inJustDecodeBounds = true;
+                Bitmap bitmap = BitmapFactory.decodeStream(in, null, options);
+                in.close();
+                in = getContentResolver().openInputStream(uri);
+                Log.d(LOG_TAG, "ImageType: " + options.outMimeType);
+
+                if (options.outMimeType.endsWith("png")) {
+                    byte[] img_byte = readBytes(in);
+                    in.close();
+                    bitmap.recycle();
+                    result = postGyazo(cgi, img_byte);
+                } else {
+                    // FIXME: more better solution for OutOfMemory.
+                    ByteArrayOutputStream byteBuffer = new ByteArrayOutputStream();
+                    int scale = 1;
+                    int h = options.outHeight;
+                    int w = options.outWidth;
+                    while (true) {
+                        if (h / scale > MAX_IMAGE_PIXEL || w / scale > MAX_IMAGE_PIXEL) {
+                            scale = scale * 2;
+                        } else {
+                            break;
+                        }
+                    }
+                    Log.d(LOG_TAG, "Scale: " + scale);
+                    options.inSampleSize = scale;
+                    options.inJustDecodeBounds = false;
+                    bitmap = BitmapFactory.decodeStream(in, null, options);
+                    in.close();
+                    bitmap.compress(CompressFormat.PNG, 100, byteBuffer);
+                    bitmap.recycle();
+                    result = postGyazo(cgi, byteBuffer.toByteArray());
+                }
+            } catch (OutOfMemoryError e0) {
+                e0.printStackTrace();
+                mErrorMessage = "Out of Memory";
+            } catch (java.io.FileNotFoundException e1) {
                 e1.printStackTrace();
-                Toast.makeText(mContext, "File not found or not local", Toast.LENGTH_LONG).show();
+                mErrorMessage = "File not found or not local";
             } catch (IOException e2) {
                 e2.printStackTrace();
-                Toast.makeText(mContext, "IO Erorr", Toast.LENGTH_LONG).show();
+                mErrorMessage = "IOError";
             }
             return result;
         }
@@ -118,6 +164,14 @@ public class ShareGyazo extends Activity {
                 mDialog.dismiss();
             }
             Log.i(LOG_TAG, "Result: " + result);
+            if (mErrorMessage != "") {
+                Toast.makeText(mContext, mErrorMessage, Toast.LENGTH_LONG).show();
+            }
+            if (result == null || !result.startsWith("http")) {
+                Toast.makeText(mContext, getString(R.string.failed_to_upload), Toast.LENGTH_LONG).show();
+                finish();
+                return;
+            }
             if (mCopyURL) {
                 ClipboardManager cm = (ClipboardManager)getSystemService(CLIPBOARD_SERVICE);
                 cm.setText(result);
