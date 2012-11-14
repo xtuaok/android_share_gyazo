@@ -1,3 +1,19 @@
+/*
+ * Copyright (C) 2012 xtuaok (http://twitter.com/xtuaok)
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package xtuaok.sharegyazo;
 
 import java.io.ByteArrayOutputStream;
@@ -24,27 +40,11 @@ import android.text.ClipboardManager;
 import android.util.Log;
 import android.widget.Toast;
 
-/*
- * Copyright (C) 2012 xtuaok (http://twitter.com/xtuaok)
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
 public class ShareGyazo extends Activity {
     private static final String DEFAULT_UPLOADER = "http://gyazo.com/upload.cgi";
     private static final String LOG_TAG = "ShareToGyazo";
     private Context mContext;
-    
+
     private String mGyazoCGI;
     private String mGyazoID;
     private boolean mCopyURL;
@@ -73,11 +73,10 @@ public class ShareGyazo extends Activity {
 
         new UploadAsyncTask().execute(mGyazoCGI, uri.toString());
     }
-    
+
     public class UploadAsyncTask  extends AsyncTask<String, Integer, String> {
         private ProgressDialog mDialog;
-        
-        
+
         private String postGyazo(String cgi, byte[] imgData) throws ClientProtocolException, IOException {
             List<NameValuePair> nValuePairs = new ArrayList<NameValuePair>();
             nValuePairs.add(new BasicNameValuePair("id", mGyazoID));  
@@ -90,7 +89,7 @@ public class ShareGyazo extends Activity {
 
         public UploadAsyncTask(){
         }
-    
+
         @Override
         protected String doInBackground(String... params) {
             String result = "";
@@ -165,6 +164,6 @@ public class ShareGyazo extends Activity {
         }
 
         // and then we can return your byte array.
-            return byteBuffer.toByteArray();
-        }
+        return byteBuffer.toByteArray();
+    }
 }
