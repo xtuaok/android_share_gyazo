@@ -31,3 +31,11 @@ Tips
 ----
 
  * トリミングしたいんだけど => ギャラリーでトリミングしてからShare
+
+寄付
+----
+寄付を募集しております。
+
+ * Amazonギフト券 https://www.amazon.co.jp/registry/wishlist/1LJRYW9IZ9IU/
+  * xtuaok@gmail.com まで
+
