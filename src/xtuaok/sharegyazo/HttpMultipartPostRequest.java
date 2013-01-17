@@ -37,7 +37,7 @@ public class HttpMultipartPostRequest {
     private String mCgi;
     private List<NameValuePair> mPostData;
     private byte[] mByteData;
-    
+
     public HttpMultipartPostRequest(String cgi, List<NameValuePair> postData, byte[] byteData) {
         mCgi = cgi;
         mPostData = postData;
@@ -63,10 +63,10 @@ public class HttpMultipartPostRequest {
 
             InputStream is = conn.getInputStream();
             res = convertToString(is);
-        } catch(Exception e) {
+        } catch (Exception e) {
             Log.d(LOG_TAG, e.getMessage());
         } finally {
-            if (conn != null ) {
+            if (conn != null) {
                 ((HttpURLConnection)conn).disconnect();
             }
         }
@@ -76,7 +76,7 @@ public class HttpMultipartPostRequest {
     private String createBoundaryMessage(String fileName) {
         StringBuffer res = new StringBuffer("--").append(BOUNDARY).append("\r\n");
         for (NameValuePair nv : mPostData) {
-            res.append("Content-Disposition: form-data; name=\"").append(nv.getName()).append("\"\r\n")    
+            res.append("Content-Disposition: form-data; name=\"").append(nv.getName()).append("\"\r\n")
             .append("\r\n").append(nv.getValue()).append("\r\n")
             .append("--").append(BOUNDARY).append("\r\n");
         }
@@ -96,15 +96,17 @@ public class HttpMultipartPostRequest {
                 builder.append(line).append("\n");
             }
             return builder.toString();
-        } catch(UnsupportedEncodingException e) {
+        } catch (UnsupportedEncodingException e) {
             Log.e(LOG_TAG, e.getMessage());
-        } catch(IOException e) {
+        } catch (IOException e) {
             Log.e(LOG_TAG, e.toString());
         } finally {
             try {
                 stream.close();
-                if (bufferReader != null) bufferReader.close();
-            } catch(IOException e) {
+                if (bufferReader != null) {
+                    bufferReader.close();
+                }
+            } catch (IOException e) {
                 // IOError
                 Log.e(LOG_TAG, e.toString());
             }
