@@ -18,7 +18,6 @@ import android.os.IBinder;
 import android.preference.PreferenceManager;
 import android.text.ClipboardManager;
 import android.util.Log;
-import android.widget.RemoteViews;
 import android.widget.Toast;
 
 import java.io.ByteArrayOutputStream;
@@ -61,6 +60,12 @@ public class UploadService extends Service {
         startService(new Intent(getApplicationContext(), getClass()));
     }
 
+    @Override
+    public void onDestroy() {
+        removeNotification();
+        super.onDestroy();
+    }
+
     public void upload(Uri uri) {
         SharedPreferences prefs =
                 PreferenceManager.getDefaultSharedPreferences(getBaseContext());
@@ -80,22 +85,16 @@ public class UploadService extends Service {
 
         mNotification = new Notification(
                 R.drawable.ic_launcher,
-                "Upload photos",
+                getString(R.string.dialog_message_uploading),
                 System.currentTimeMillis()
         );
-        RemoteViews contentView = new RemoteViews(
-                getApplicationContext().getPackageName(),
-                R.layout.upload_progress_notification
-        );
-        contentView.setProgressBar(
-                R.id.upload_progress_notification_progress_bar,
-                10, 0, false
-        );
-        contentView.setTextViewText(R.id.upload_progress_notification_text_view,
-                                    "Upload in progress");
-
-        mNotification.contentView = contentView;
         mNotification.flags = Notification.FLAG_ONGOING_EVENT;
+
+        mNotification.setLatestEventInfo(
+                getApplicationContext(),
+                getString(R.string.app_name),
+                getString(R.string.dialog_message_uploading),
+                null);
 
         mNotifyManager.notify(R.string.app_name, mNotification);
     }
@@ -187,8 +186,6 @@ public class UploadService extends Service {
 
         @Override
         protected void onPostExecute(String result) {
-            removeNotification();
-
             Intent intent = new Intent();
             Log.i(LOG_TAG, "Result: " + result);
             if (mErrorMessage != "") {
