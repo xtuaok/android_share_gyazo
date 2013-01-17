@@ -38,35 +38,35 @@ public class GyazoPreference extends PreferenceActivity {
         super.onCreate(savedInstanceState);
         SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getBaseContext());
         addPreferencesFromResource(R.xml.preference);
-        
+
         EditTextPreference editTextPref;
         editTextPref = (EditTextPreference)findPreference(PREF_GYAZO_CGI);
         editTextPref.setSummary(editTextPref.getText());
         editTextPref.setOnPreferenceChangeListener(new OnPreferenceChangeListener() {
-			public boolean onPreferenceChange(Preference preference, Object newValue) {
-				((EditTextPreference)preference).setSummary(newValue.toString());
-				return true;
-			}
-		});
+            public boolean onPreferenceChange(Preference preference, Object newValue) {
+                ((EditTextPreference)preference).setSummary(newValue.toString());
+                return true;
+            }
+        });
 
         editTextPref = (EditTextPreference)findPreference(PREF_GYAZO_ID);
         editTextPref.setSummary(editTextPref.getText());
         editTextPref.setOnPreferenceChangeListener(new OnPreferenceChangeListener() {
-			public boolean onPreferenceChange(Preference preference, Object newValue) {
-				((EditTextPreference)preference).setSummary(newValue.toString());
-				return true;
-			}
-		});
-        
-        if (prefs.getBoolean(PREF_OPEN_BROWSER, false) && 
-            prefs.getBoolean(PREF_SHARE_TEXT, false)) {
+            public boolean onPreferenceChange(Preference preference, Object newValue) {
+                ((EditTextPreference)preference).setSummary(newValue.toString());
+                return true;
+            }
+        });
+
+        if (prefs.getBoolean(PREF_OPEN_BROWSER, false) &&
+                prefs.getBoolean(PREF_SHARE_TEXT, false)) {
             prefs.edit().putBoolean(PREF_SHARE_TEXT, false).commit();
         }
 
         CheckBoxPreference checkBoxPref;
         checkBoxPref = (CheckBoxPreference)findPreference(PREF_OPEN_BROWSER);
 
-        checkBoxPref.setOnPreferenceChangeListener(new OnPreferenceChangeListener() {            
+        checkBoxPref.setOnPreferenceChangeListener(new OnPreferenceChangeListener() {
             public boolean onPreferenceChange(Preference preference, Object newValue) {
                 CheckBoxPreference p2 = (CheckBoxPreference)findPreference(PREF_SHARE_TEXT);
                 if (newValue.toString().equals("true")) {
@@ -79,7 +79,7 @@ public class GyazoPreference extends PreferenceActivity {
         });
         checkBoxPref = (CheckBoxPreference)findPreference(PREF_SHARE_TEXT);
 
-        checkBoxPref.setOnPreferenceChangeListener(new OnPreferenceChangeListener() {            
+        checkBoxPref.setOnPreferenceChangeListener(new OnPreferenceChangeListener() {
             public boolean onPreferenceChange(Preference preference, Object newValue) {
                 CheckBoxPreference p2 = (CheckBoxPreference)findPreference(PREF_OPEN_BROWSER);
                 if (newValue.toString().equals("true")) {
@@ -92,7 +92,7 @@ public class GyazoPreference extends PreferenceActivity {
         });
         fixCheck();
     }
-    
+
     private void fixCheck() {
         SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getBaseContext());;
         CheckBoxPreference checkBoxPref;

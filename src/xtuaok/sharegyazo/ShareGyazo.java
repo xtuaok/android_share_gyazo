@@ -59,12 +59,13 @@ public class ShareGyazo extends Activity {
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_share_gyazo);
-        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getBaseContext());;
+        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getBaseContext());
         mContext = getApplicationContext();
         Uri uri;
         uri = getIntent().getData();
-        if (uri == null)
+        if (uri == null) {
             uri = Uri.parse(getIntent().getExtras().get("android.intent.extra.STREAM").toString());
+        }
         if (uri == null) {
             finish();
             return;
@@ -84,7 +85,7 @@ public class ShareGyazo extends Activity {
 
         private String postGyazo(String cgi, byte[] imgData) throws ClientProtocolException, IOException {
             List<NameValuePair> nValuePairs = new ArrayList<NameValuePair>();
-            nValuePairs.add(new BasicNameValuePair("id", mGyazoID));  
+            nValuePairs.add(new BasicNameValuePair("id", mGyazoID));
             String ret;
             HttpMultipartPostRequest request = new HttpMultipartPostRequest(cgi, nValuePairs, imgData);
             Log.d(LOG_TAG, "send POST request");
@@ -92,7 +93,7 @@ public class ShareGyazo extends Activity {
             return ret;
         }
 
-        public UploadAsyncTask(){
+        public UploadAsyncTask() {
         }
 
         @Override
@@ -153,7 +154,7 @@ public class ShareGyazo extends Activity {
         @Override
         protected void onPostExecute(String result) {
             Intent intent = new Intent();
-            if(mDialog != null){
+            if (mDialog != null) {
                 mDialog.dismiss();
             }
             Log.i(LOG_TAG, "Result: " + result);
