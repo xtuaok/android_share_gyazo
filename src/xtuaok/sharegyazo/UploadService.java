@@ -127,6 +127,10 @@ public class UploadService extends Service {
         @Override
         protected void onPreExecute() {
             createNotification();
+            Toast.makeText(getApplicationContext(),
+                           getString(R.string.dialog_message_uploading),
+                           Toast.LENGTH_LONG)
+                 .show();
         }
 
         @Override
@@ -204,13 +208,15 @@ public class UploadService extends Service {
                 intent.setAction(Intent.ACTION_VIEW);
                 intent.addCategory(Intent.CATEGORY_BROWSABLE);
                 intent.setData(Uri.parse(result));
-                startActivity(intent);
+                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                getApplicationContext().startActivity(intent);
             } else if (mShareURL) {
                 intent.setAction(Intent.ACTION_SEND);
                 intent.setType("text/plain");
                 intent.addCategory(Intent.CATEGORY_DEFAULT);
                 intent.putExtra(Intent.EXTRA_TEXT, result);
-                startActivity(intent);
+                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                getApplicationContext().startActivity(intent);
             }
 
             UploadService.this.stopSelf();
