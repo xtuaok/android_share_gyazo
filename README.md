@@ -1,5 +1,4 @@
-ShareGyazo
-==========
+# ShareGyazo
 
 ギャラリーから画像の共有やスクリーンショットの通知からインテントを受け取り、Gyazoサーバへ画像をアップロードするアプリです。
 
@@ -15,25 +14,22 @@ Gyazoサーバから帰ってきた画像のURLは、
 
 PNG以外の画像はアップロード時にPNGに変換します。
 
-ダウンロード
-------------
+## ダウンロード
 
- * http://dl.dropbox.com/u/79756463/ShareGyazo-1.1.apk
+ * https://play.google.com/store/apps/details?id=xtuaok.sharegyazo
 
-主な使い方
-----------
+## 主な使い方
 
  1. OSの機能でスクリーンショットを撮ります
  2. 通知バーにスクリーンショットの通知が出るので選択します
  3. ShareGyazo
 
-Tips
-----
+## Tips
 
  * トリミングしたいんだけど => ギャラリーでトリミングしてからShare
 
-寄付
-----
+## 寄付
+
 寄付を募集しております。
 
  * Amazonギフト券 https://www.amazon.co.jp/registry/wishlist/1LJRYW9IZ9IU/
