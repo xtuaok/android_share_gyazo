@@ -26,13 +26,25 @@
             android:key="copy_gyazo_url"
             android:defaultValue="true" />
         <CheckBoxPreference
-            android:title="@string/open_url_browser_title"
+            android:title="@string/open_url"
             android:summary="@string/open_url_browser_summary"
             android:key="open_url_browser"/>
         <CheckBoxPreference
-            android:title="@string/share_url_text_title"
+            android:title="@string/share_url"
             android:summary="@string/share_url_text_summary"
             android:key="share_url_text"/>
+    </PreferenceCategory>
+
+    <PreferenceCategory
+        android:title="@string/notifications"
+        android:key="category_notification">
+        <ListPreference
+             android:dialogTitle="@string/notification_action"
+             android:key="notification_action"
+             android:title="@string/notification_action"
+             android:entries="@array/notify_action_entries"
+             android:entryValues="@array/notify_action_values"
+             android:defaultValue="0"/>
     </PreferenceCategory>
 
 </PreferenceScreen>

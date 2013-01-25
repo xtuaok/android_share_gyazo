@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2012 xtuaok (http://twitter.com/xtuaok)
+ * Copyright (C) 2013 xtuaok (http://twitter.com/xtuaok)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,6 +20,7 @@ import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.preference.CheckBoxPreference;
 import android.preference.EditTextPreference;
+import android.preference.ListPreference;
 import android.preference.Preference;
 import android.preference.Preference.OnPreferenceChangeListener;
 import android.preference.PreferenceActivity;
@@ -32,6 +33,7 @@ public class GyazoPreference extends PreferenceActivity {
     public static final String PREF_COPY_URL     = "copy_gyazo_url";
     public static final String PREF_OPEN_BROWSER = "open_url_browser";
     public static final String PREF_SHARE_TEXT   = "share_url_text";
+    public static final String PREF_NOTIFY_ACTION = "notification_action";
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -91,6 +93,24 @@ public class GyazoPreference extends PreferenceActivity {
             }
         });
         fixCheck();
+
+        ListPreference listPref = (ListPreference)getPreferenceScreen().findPreference(PREF_NOTIFY_ACTION);
+        listPref.setSummary(listPref.getEntry());
+        listPref.setOnPreferenceChangeListener(new OnPreferenceChangeListener() {
+            public boolean onPreferenceChange(Preference preference, Object newValue) {
+                if(preference.getKey().equals(PREF_NOTIFY_ACTION)){
+                    int value = Integer.parseInt((String)newValue);
+                    switch(value){
+                        case 0 : preference.setSummary(R.string.none); break;
+                        case 1 : preference.setSummary(R.string.open_url); break;
+                        case 2 : preference.setSummary(R.string.share_url); break;
+                        default: preference.setSummary(""); return false;
+                    }
+                    return true;
+                }
+                return false;
+            }
+        });
     }
 
     private void fixCheck() {

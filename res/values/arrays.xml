@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string-array name="notify_action_entries">
+        <item>@string/none</item>
+        <item>@string/open_url</item>
+        <item>@string/share_url</item>
+    </string-array>
+    
+    <string-array name="notify_action_values" translatable="false">
+        <item>0</item>
+        <item>1</item>
+        <item>2</item>
+    </string-array>
+</resources>
