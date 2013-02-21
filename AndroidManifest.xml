@@ -12,6 +12,7 @@
         android:icon="@drawable/ic_launcher"
         android:label="@string/app_name"
         android:allowBackup="true">
+
         <activity
             android:name=".ShareGyazo"
             android:theme="@style/Theme.Transparent"
@@ -33,7 +34,12 @@
                 <data android:mimeType="image/gif" />
             </intent-filter>
         </activity>
-        
+
+        <activity
+            android:name=".ClipText"
+            android:theme="@style/Theme.Transparent"
+            android:label="@string/title_activity_share_gyazo" />
+
         <activity
             android:name=".GyazoPreference"
             android:label="@string/title_activity_preference" >
