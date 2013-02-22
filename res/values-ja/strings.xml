@@ -7,6 +7,7 @@
     <string name="dialog_message_done">アップロード完了</string>
     <string name="dialog_message_uploading">アップロード中&#8230;</string>
     <string name="failed_to_upload">アップロードに失敗しました</string>
+    <string name="message_uploaded">画像をアップロードしました</string>
 
     <string name="title_activity_preference">ShareGyazo設定</string>
 
@@ -26,12 +27,17 @@
     <string name="share_url_text_summary">Gyazoから取得した画像URLをテキストとして共有する</string>
 
     <string name="notifications">通知</string>
-    <string name="notification_action">完了通知の挙動</string>
+    <string name="notification_action">通知タップアクション</string>
     <string name="notification_action_message">通知アイテムをタップしたときの挙動を選択</string>
-    <string name="notification_enable_toast_title">トーストを表示すr</string>
+    <string name="notification_enable_toast_title">トーストを表示する</string>
 
     <string name="none">なし</string>
     <string name="open_url">画像のURLを開く</string>
     <string name="share_url">画像のURLを共有</string>
+    <string name="copy_url">画像のURLをコピー</string>
 
+    <string name="pref_show_notification_title">通知を表示する</string>
+    <string name="pref_show_notification_summary">アップロード中や完了時にステータスバーに通知する</string>
+    <string name="pref_auto_close_notification_title">自動で通知を消去</string>
+    <string name="pref_auto_close_notification_summary">タップしたら通知を消去する</string>
 </resources>

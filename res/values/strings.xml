@@ -3,11 +3,12 @@
 
     <string name="app_name">ShareGyazo</string>
     <string name="title_activity_share_gyazo">ShareGyazo</string>
-    <string name="toast_copy_url">Image URL copied into Clipboard</string>
+    <string name="toast_copy_url">Image URL copied into Clipboard.</string>
     <string name="dialog_message_done">Upload completed.</string>
     <string name="dialog_message_uploading">Uploading&#8230;</string>
     <string name="title_activity_preference">ShareGyazo Settings</string>
-    <string name="failed_to_upload">Failed to upload</string>
+    <string name="failed_to_upload">Failed to upload.</string>
+    <string name="message_uploaded">Image uploaded</string>
 
     <string name="ok">OK</string>
     <string name="cancel">Cancel</string>
@@ -19,18 +20,23 @@
 
     <string name="category_behavior_url">Behavior for gyazo URL</string>
     <string name="copy_gyazo_url_title">Copy image URL</string>
-    <string name="copy_gyazo_url_summary">Copy gyazo URL text into clipboard</string>
+    <string name="copy_gyazo_url_summary">Copy gyazo URL text into clipboard.</string>
 
-    <string name="open_url_browser_summary">Open gyazo URL with web browser</string>
-    <string name="share_url_text_summary">Share gayzo URL as text intent</string>
+    <string name="open_url_browser_summary">Open gyazo URL with web browser.</string>
+    <string name="share_url_text_summary">Share gayzo URL as text.</string>
 
     <string name="notifications">Notifications</string>
     <string name="notification_action">Action for notification</string>
-    <string name="notification_action_message">Choose action when tap notification item</string>
+    <string name="notification_action_message">Choose action when tap notification item.</string>
     <string name="notification_enable_toast_title">Enable toast</string>
 
     <string name="none">None</string>
     <string name="open_url">Open image URL</string>
     <string name="share_url">Share image URL</string>
+    <string name="copy_url">Copy image URL</string>
 
+    <string name="pref_show_notification_title">Show notification</string>
+    <string name="pref_show_notification_summary">Show notification when uploading or complete.</string>
+    <string name="pref_auto_close_notification_title">Auto delete notification</string>
+    <string name="pref_auto_close_notification_summary">Delete notification item with tap action.</string>
 </resources>
