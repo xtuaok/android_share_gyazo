@@ -64,7 +64,7 @@ public class HttpMultipartPostRequest {
             InputStream is = conn.getInputStream();
             res = convertToString(is);
         } catch (Exception e) {
-            Log.d(LOG_TAG, e.getMessage());
+            Log.d(LOG_TAG, e.getMessage() + "");
         } finally {
             if (conn != null) {
                 ((HttpURLConnection)conn).disconnect();
