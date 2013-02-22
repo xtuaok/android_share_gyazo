@@ -11,17 +11,16 @@ import org.apache.http.client.ClientProtocolException;
 import org.apache.http.message.BasicNameValuePair;
 
 import android.preference.PreferenceManager;
-import android.app.Notification;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.content.ClipData;
+import android.content.ClipboardManager;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Bitmap.CompressFormat;
 import android.support.v4.app.NotificationCompat;
-import android.content.ClipboardManager;
 import android.util.Log;
 import android.widget.Toast;
 
@@ -46,11 +45,14 @@ public class UploadService extends IntentService {
     private boolean mOpenURL;
     private boolean mShareURL;
     private int mNotifyAction;
+    private boolean mNotifyClose;
+    private boolean mNotification;
     private Bitmap mBitmap;
     private NotificationManager mNotificationManager;
     private String mErrorMessage = "";
 
     private static final int MAX_IMAGE_PIXEL = 1920; // HD
+    private static final int LARGE_ICON_SIZE = 256; // 適当
 
     public UploadService(String name) {
         super(name);
@@ -64,38 +66,53 @@ public class UploadService extends IntentService {
     @Override
     protected void onHandleIntent(Intent intent) {
         SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getBaseContext());
-        Uri uri = intent.getData();
         String result = "";
+
+        Uri uri = intent.getData();
 
         mContext = getApplicationContext();
         mGyazoCGI = prefs.getString(GyazoPreference.PREF_GYAZO_CGI, DEFAULT_UPLOADER);
         mGyazoID  = prefs.getString(GyazoPreference.PREF_GYAZO_ID, "");
         mCopyURL  = prefs.getBoolean(GyazoPreference.PREF_COPY_URL, true);
         mOpenURL  = prefs.getBoolean(GyazoPreference.PREF_OPEN_BROWSER, false);
-        mShareURL = prefs.getBoolean(GyazoPreference.PREF_SHARE_TEXT, false);
+        mShareURL = prefs.getBoolean(GyazoPreference.PREF_SHARE_TEXT, true);
         mNotifyAction = Integer.parseInt(prefs.getString(GyazoPreference.PREF_NOTIFY_ACTION, "0"));
+        mNotifyClose = prefs.getBoolean(GyazoPreference.PREF_AUTO_CLOSE_NOTIFICATION, false);
+        mNotification = prefs.getBoolean(GyazoPreference.PREF_SHOW_NOTIFICATION, true);
 
         mNotificationManager = (NotificationManager)getSystemService(Context.NOTIFICATION_SERVICE);
 
         // Notify UPLOADING
+        Intent notifIntent = new Intent();
+        notifIntent.addCategory(Intent.CATEGORY_DEFAULT);
+        notifIntent.setAction(Intent.ACTION_VIEW);
+        notifIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        notifIntent.setData(uri);
+        PendingIntent pendingIntent = PendingIntent.getActivity(this, 0, notifIntent, PendingIntent.FLAG_UPDATE_CURRENT);
+
         NotificationCompat.Builder builder = new NotificationCompat.Builder(this);
         builder.setContentTitle(getString(R.string.dialog_message_uploading))
             .setSmallIcon(R.drawable.ic_launcher)
             .setTicker(getString(R.string.dialog_message_uploading))
-            .setOngoing(true);
-        mNotificationManager.notify(NOTIFY_UPLOADING, builder.build());
+            .setContentIntent(pendingIntent)
+            .setOngoing(true)
+            .setAutoCancel(mNotifyClose);
 
-        mHandler.post(new Runnable() {            
+        if (mNotification) {
+            mNotificationManager.notify(NOTIFY_UPLOADING, builder.build());
+        }
+        mHandler.post(new Runnable() {
             public void run() {
                 Toast.makeText(mContext, getString(R.string.dialog_message_uploading), Toast.LENGTH_LONG).show();                
             }
         });
 
         result = doUpload(mGyazoCGI, uri);
-        done(result);
+        done(result, uri);
     }
     
-    private void done(String result) {
+    @SuppressWarnings("deprecation")
+    private void done(String result, Uri uri) {
         Intent intent = new Intent();
         PendingIntent intentView = null;
         PendingIntent intentSend = null;
@@ -109,7 +126,31 @@ public class UploadService extends IntentService {
                 }
             });
         }
+
         if (result == null || !result.startsWith("http")) {
+            mNotificationManager.cancel(NOTIFY_UPLOADING);
+
+            Intent notifIntent = new Intent();
+            notifIntent.addCategory(Intent.CATEGORY_DEFAULT);
+            notifIntent.setAction(Intent.ACTION_VIEW);
+            notifIntent.setData(uri);
+
+            PendingIntent pendingIntent = PendingIntent.getActivity(this, 0, notifIntent, PendingIntent.FLAG_UPDATE_CURRENT);
+            NotificationCompat.Builder builder = new NotificationCompat.Builder(this);
+            builder.setContentTitle(getString(R.string.failed_to_upload))
+                .setSmallIcon(R.drawable.ic_launcher)
+                .setTicker(getString(R.string.failed_to_upload))
+                .setContentIntent(pendingIntent)
+                .setAutoCancel(true)
+                .setAutoCancel(mNotifyClose);
+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB) {
+                builder.setLargeIcon(mBitmap);
+            }
+
+            if (mNotification) {
+                mNotificationManager.notify(NOTIFY_UPLOADING, builder.build());
+            }
             mHandler.post(new Runnable() {            
                 public void run() {
                     Toast.makeText(mContext, getString(R.string.failed_to_upload), Toast.LENGTH_LONG).show();
@@ -117,12 +158,19 @@ public class UploadService extends IntentService {
             });
             return;
         }
+
         if (mCopyURL) {
-            ClipData clip = ClipData.newPlainText("url text", result);
-            ((ClipboardManager)getSystemService(CLIPBOARD_SERVICE)).setPrimaryClip(clip);
-            mHandler.post(new Runnable() {            
+            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.HONEYCOMB) {
+                ((android.text.ClipboardManager)(getSystemService(CLIPBOARD_SERVICE))).setText(result);
+            } else {
+                ClipData clip = ClipData.newPlainText("url text", result);
+                ClipboardManager cm = (ClipboardManager)getSystemService(CLIPBOARD_SERVICE);
+                cm.setPrimaryClip(clip);
+            }
+            mHandler.post(new Runnable() {
                 public void run() {
-                    Toast.makeText(mContext, getString(R.string.toast_copy_url), Toast.LENGTH_LONG).show();
+                    Toast.makeText(getApplicationContext(),
+                            getString(R.string.toast_copy_url), Toast.LENGTH_LONG).show();
                 }
             });
         }
@@ -173,29 +221,38 @@ public class UploadService extends IntentService {
         NotificationCompat.Builder builder = new NotificationCompat.Builder(this);
         builder.setContentTitle(getString(R.string.app_name))
             .setSmallIcon(R.drawable.ic_launcher)
-            .setLargeIcon(mBitmap)
             .addAction(android.R.drawable.ic_menu_view, "Open", intentView)
             .addAction(android.R.drawable.ic_menu_send, "Send", intentSend)
-            .addAction(android.R.drawable.ic_menu_set_as, "Copy", intentCopy);
+            .addAction(android.R.drawable.ic_menu_set_as, "Copy", intentCopy)
+            .setTicker(result)
+            .setContentText(result)
+            .setAutoCancel(mNotifyClose);
 
-        // Backward Compatibility
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.JELLY_BEAN) {
-            if (mNotifyAction == 1) {
-                builder.setContentIntent(intentView);
-            } else if (mNotifyAction == 2) {
-                builder.setContentIntent(intentSend);
-            }
-        } else {
+        // Tap actions
+        if (mNotifyAction == 1) {
+            builder.setContentIntent(intentView);
+        } else if (mNotifyAction == 2) {
+            builder.setContentIntent(intentSend);
+        } else if (mNotifyAction == 3) {
             builder.setContentIntent(intentCopy);
         }
 
-        Notification notification =
-                new NotificationCompat.BigTextStyle(builder)
-                    .bigText(result)
-                    .setSummaryText(getString(R.string.dialog_message_done))
-                    .build();
-        mNotificationManager.cancel(NOTIFY_UPLOADING);
-        mNotificationManager.notify(result, NOTIFY_DONE, notification);
+        // Backward Compatibility
+        // Action buttons from API Level 16 so, use tap action instead.
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.JELLY_BEAN) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB) {
+                builder.setLargeIcon(mBitmap);
+            }
+        } else {
+            builder.setStyle(new NotificationCompat.BigPictureStyle()
+                    .bigPicture(mBitmap)
+                    .setBigContentTitle(getString(R.string.message_uploaded))
+                    .setSummaryText(result));
+        }
+        if (mNotification) {
+            mNotificationManager.cancel(NOTIFY_UPLOADING);
+            mNotificationManager.notify(result, NOTIFY_DONE, builder.build());
+        }
     }
 
     private String doUpload(String cgi, Uri uri) {
@@ -214,21 +271,23 @@ public class UploadService extends IntentService {
                 byte[] img_byte = readBytes(in);
                 in.close();
                 // for notification image
-                int scale = 1;
-                int h = options.outHeight;
-                int w = options.outWidth;
-                while (true) {
-                    if (h / scale > android.R.dimen.notification_large_icon_height ||
-                        w / scale > android.R.dimen.notification_large_icon_width) {
-                        scale = scale * 2;
-                    } else {
-                        break;
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB) {
+                    int scale = 1;
+                    int h = options.outHeight;
+                    int w = options.outWidth;
+                    while (true) {
+                        if (h / scale > LARGE_ICON_SIZE ||
+                            w / scale > LARGE_ICON_SIZE) {
+                            scale = scale * 2;
+                        } else {
+                            break;
+                        }
                     }
+                    Log.d(LOG_TAG, "Scale: " + scale);
+                    options.inSampleSize = scale;
+                    options.inJustDecodeBounds = false;
+                    mBitmap = BitmapFactory.decodeByteArray(img_byte, 0, img_byte.length, options);
                 }
-                Log.d(LOG_TAG, "Scale: " + scale);
-                options.inSampleSize = scale;
-                options.inJustDecodeBounds = false;
-                mBitmap = BitmapFactory.decodeByteArray(img_byte, 0, img_byte.length, options);
                 result = postGyazo(cgi, img_byte);
             } else {
                 // TODO: more better solution for OutOfMemory.
@@ -248,9 +307,10 @@ public class UploadService extends IntentService {
                 options.inJustDecodeBounds = false;
                 bitmap = BitmapFactory.decodeStream(in, null, options);
                 in.close();
-                mBitmap = Bitmap.createScaledBitmap(bitmap,
-                        android.R.dimen.notification_large_icon_width,
-                        android.R.dimen.notification_large_icon_height, false);
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB) {
+                    mBitmap = Bitmap.createScaledBitmap(bitmap,
+                            LARGE_ICON_SIZE, LARGE_ICON_SIZE, false);
+                }
                 bitmap.compress(CompressFormat.PNG, 100, byteBuffer);
                 bitmap.recycle();
                 result = postGyazo(cgi, byteBuffer.toByteArray());

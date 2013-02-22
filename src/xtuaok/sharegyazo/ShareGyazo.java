@@ -39,6 +39,7 @@ public class ShareGyazo extends Activity {
         }
 
         Intent intent = new Intent(this, UploadService.class);
+        intent.setFlags(Intent.FLAG_ACTIVITY_NO_HISTORY | Intent.FLAG_ACTIVITY_CLEAR_TASK);
         intent.setData(uri);
         startService(intent);
         finish();

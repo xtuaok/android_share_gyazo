@@ -34,6 +34,8 @@ public class GyazoPreference extends PreferenceActivity {
     public static final String PREF_OPEN_BROWSER = "open_url_browser";
     public static final String PREF_SHARE_TEXT   = "share_url_text";
     public static final String PREF_NOTIFY_ACTION = "notification_action";
+    public static final String PREF_SHOW_NOTIFICATION = "show_notification";
+    public static final String PREF_AUTO_CLOSE_NOTIFICATION = "auto_close_notification";
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -104,6 +106,7 @@ public class GyazoPreference extends PreferenceActivity {
                         case 0 : preference.setSummary(R.string.none); break;
                         case 1 : preference.setSummary(R.string.open_url); break;
                         case 2 : preference.setSummary(R.string.share_url); break;
+                        case 3 : preference.setSummary(R.string.copy_url); break;
                         default: preference.setSummary(""); return false;
                     }
                     return true;
