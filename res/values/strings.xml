@@ -35,8 +35,13 @@
     <string name="share_url">Share image URL</string>
     <string name="copy_url">Copy image URL</string>
 
+    <string name="open">Open</string>
+    <string name="share">Share</string>
+    <string name="copy">Copy</string>
+
     <string name="pref_show_notification_title">Show notification</string>
     <string name="pref_show_notification_summary">Show notification when uploading or complete.</string>
     <string name="pref_auto_close_notification_title">Auto delete notification</string>
     <string name="pref_auto_close_notification_summary">Delete notification item with tap action.</string>
+
 </resources>
