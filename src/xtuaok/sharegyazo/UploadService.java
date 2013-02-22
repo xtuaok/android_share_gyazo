@@ -11,6 +11,7 @@ import org.apache.http.client.ClientProtocolException;
 import org.apache.http.message.BasicNameValuePair;
 
 import android.preference.PreferenceManager;
+import android.app.Notification;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.content.ClipData;
@@ -92,7 +93,7 @@ public class UploadService extends IntentService {
 
         NotificationCompat.Builder builder = new NotificationCompat.Builder(this);
         builder.setContentTitle(getString(R.string.dialog_message_uploading))
-            .setSmallIcon(R.drawable.ic_launcher)
+            .setSmallIcon(android.R.drawable.ic_menu_upload)
             .setTicker(getString(R.string.dialog_message_uploading))
             .setContentIntent(pendingIntent)
             .setOngoing(true)
@@ -138,7 +139,7 @@ public class UploadService extends IntentService {
             PendingIntent pendingIntent = PendingIntent.getActivity(this, 0, notifIntent, PendingIntent.FLAG_UPDATE_CURRENT);
             NotificationCompat.Builder builder = new NotificationCompat.Builder(this);
             builder.setContentTitle(getString(R.string.failed_to_upload))
-                .setSmallIcon(R.drawable.ic_launcher)
+                .setSmallIcon(android.R.drawable.ic_menu_report_image)
                 .setTicker(getString(R.string.failed_to_upload))
                 .setContentIntent(pendingIntent)
                 .setAutoCancel(true)
@@ -190,6 +191,9 @@ public class UploadService extends IntentService {
             mContext.startActivity(intent);
         }
 
+        if (!mNotification) {
+            return;
+        }
         // Notifications
         Intent notifyIntent;
 
@@ -218,38 +222,54 @@ public class UploadService extends IntentService {
         intentCopy = PendingIntent.getActivity(mContext, 0, notifyIntent, PendingIntent.FLAG_UPDATE_CURRENT);
 
         // build
-        NotificationCompat.Builder builder = new NotificationCompat.Builder(this);
-        builder.setContentTitle(getString(R.string.app_name))
-            .setSmallIcon(R.drawable.ic_launcher)
-            .addAction(android.R.drawable.ic_menu_view, "Open", intentView)
-            .addAction(android.R.drawable.ic_menu_send, "Send", intentSend)
-            .addAction(android.R.drawable.ic_menu_set_as, "Copy", intentCopy)
-            .setTicker(result)
-            .setContentText(result)
-            .setAutoCancel(mNotifyClose);
-
-        // Tap actions
-        if (mNotifyAction == 1) {
-            builder.setContentIntent(intentView);
-        } else if (mNotifyAction == 2) {
-            builder.setContentIntent(intentSend);
-        } else if (mNotifyAction == 3) {
-            builder.setContentIntent(intentCopy);
-        }
-
-        // Backward Compatibility
-        // Action buttons from API Level 16 so, use tap action instead.
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.JELLY_BEAN) {
+            NotificationCompat.Builder builder = new NotificationCompat.Builder(this);
+            builder.setContentTitle(getString(R.string.message_uploaded))
+                .setSmallIcon(android.R.drawable.ic_menu_gallery)
+                .addAction(android.R.drawable.ic_menu_view, getString(R.string.open), intentView)
+                .addAction(android.R.drawable.ic_menu_share, getString(R.string.share), intentSend)
+                .addAction(android.R.drawable.ic_menu_set_as, getString(R.string.copy), intentCopy)
+                .setTicker(result)
+                .setContentText(result)
+                .setAutoCancel(mNotifyClose);
+
+            // Tap actions
+            if (mNotifyAction == 1) {
+                builder.setContentIntent(intentView);
+            } else if (mNotifyAction == 2) {
+                builder.setContentIntent(intentSend);
+            } else if (mNotifyAction == 3) {
+                builder.setContentIntent(intentCopy);
+            }
+
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB) {
                 builder.setLargeIcon(mBitmap);
             }
-        } else {
-            builder.setStyle(new NotificationCompat.BigPictureStyle()
-                    .bigPicture(mBitmap)
-                    .setBigContentTitle(getString(R.string.message_uploaded))
-                    .setSummaryText(result));
-        }
-        if (mNotification) {
+            mNotificationManager.cancel(NOTIFY_UPLOADING);
+            mNotificationManager.notify(result, NOTIFY_DONE, builder.build());
+        } else { // for JB or higher
+            Notification.Builder builder = new Notification.Builder(this);
+            builder.setContentTitle(getString(R.string.message_uploaded))
+                .setSmallIcon(android.R.drawable.ic_menu_gallery)
+                .addAction(android.R.drawable.ic_menu_view, getString(R.string.open), intentView)
+                .addAction(android.R.drawable.ic_menu_share, getString(R.string.share), intentSend)
+                .addAction(android.R.drawable.ic_menu_set_as, getString(R.string.copy), intentCopy)
+                .setTicker(result)
+                .setContentText(result)
+                .setAutoCancel(mNotifyClose);
+            // Tap actions
+            if (mNotifyAction == 1) {
+                builder.setContentIntent(intentView);
+            } else if (mNotifyAction == 2) {
+                builder.setContentIntent(intentSend);
+            } else if (mNotifyAction == 3) {
+                builder.setContentIntent(intentCopy);
+            }
+            builder.setStyle(new Notification.BigPictureStyle()
+            .bigPicture(mBitmap)
+            .bigLargeIcon(BitmapFactory.decodeResource(getResources(), R.drawable.ic_launcher))
+            .setBigContentTitle(getString(R.string.message_uploaded))
+            .setSummaryText(result));
             mNotificationManager.cancel(NOTIFY_UPLOADING);
             mNotificationManager.notify(result, NOTIFY_DONE, builder.build());
         }
