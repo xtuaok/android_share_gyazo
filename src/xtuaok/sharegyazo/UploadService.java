@@ -48,12 +48,11 @@ public class UploadService extends IntentService {
     private int mNotifyAction;
     private boolean mNotifyClose;
     private boolean mNotification;
-    private Bitmap mBitmap;
+    private Bitmap mBitmap = null;
     private NotificationManager mNotificationManager;
     private String mErrorMessage = "";
 
     private static final int MAX_IMAGE_PIXEL = 1920; // HD
-    private static final int LARGE_ICON_SIZE = 256; // 適当
 
     public UploadService(String name) {
         super(name);
@@ -152,6 +151,9 @@ public class UploadService extends IntentService {
             if (mNotification) {
                 mNotificationManager.notify(NOTIFY_UPLOADING, builder.build());
             }
+            if (mBitmap != null && !mBitmap.isRecycled()) {
+                mBitmap.recycle();
+            }
             mHandler.post(new Runnable() {            
                 public void run() {
                     Toast.makeText(mContext, getString(R.string.failed_to_upload), Toast.LENGTH_LONG).show();
@@ -247,6 +249,9 @@ public class UploadService extends IntentService {
             }
             mNotificationManager.cancel(NOTIFY_UPLOADING);
             mNotificationManager.notify(result, NOTIFY_DONE, builder.build());
+            if (mBitmap != null && !mBitmap.isRecycled()) {
+                mBitmap.recycle();
+            }
         } else { // for JB or higher
             Notification.Builder builder = new Notification.Builder(this);
             builder.setContentTitle(getString(R.string.message_uploaded))
@@ -272,6 +277,9 @@ public class UploadService extends IntentService {
             .setSummaryText(result));
             mNotificationManager.cancel(NOTIFY_UPLOADING);
             mNotificationManager.notify(result, NOTIFY_DONE, builder.build());
+            if (mBitmap != null && !mBitmap.isRecycled()) {
+                mBitmap.recycle();
+            }
         }
     }
 
@@ -296,8 +304,8 @@ public class UploadService extends IntentService {
                     int h = options.outHeight;
                     int w = options.outWidth;
                     while (true) {
-                        if (h / scale > LARGE_ICON_SIZE ||
-                            w / scale > LARGE_ICON_SIZE) {
+                        if (h / scale > MAX_IMAGE_PIXEL ||
+                            w / scale > MAX_IMAGE_PIXEL) {
                             scale = scale * 2;
                         } else {
                             break;
@@ -328,11 +336,9 @@ public class UploadService extends IntentService {
                 bitmap = BitmapFactory.decodeStream(in, null, options);
                 in.close();
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB) {
-                    mBitmap = Bitmap.createScaledBitmap(bitmap,
-                            LARGE_ICON_SIZE, LARGE_ICON_SIZE, false);
+                    mBitmap = Bitmap.createBitmap(bitmap);
                 }
                 bitmap.compress(CompressFormat.PNG, 100, byteBuffer);
-                bitmap.recycle();
                 result = postGyazo(cgi, byteBuffer.toByteArray());
             }
         } catch (OutOfMemoryError e0) {
