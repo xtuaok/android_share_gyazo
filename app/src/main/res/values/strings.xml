@@ -44,4 +44,10 @@
     <string name="pref_auto_close_notification_title">Auto delete notification</string>
     <string name="pref_auto_close_notification_summary">Delete notification item with tap action.</string>
 
+    <string name="image_format">Image Format</string>
+    <string name="image_file_format">File Format</string>
+    <string name="image_quality">Image Quality</string>
+    <string name="image_quality_value">Image Quality Value (0&#8211;100)</string>
+
+    <string name="convert_image">Converting image...</string>
 </resources>

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2013 xtuaok (http://twitter.com/xtuaok)
+ * Copyright (C) 2015 xtuaok (http://twitter.com/xtuaok)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,6 @@
 
 package xtuaok.sharegyazo;
 
-import android.os.Build;
 import android.os.Bundle;
 import android.util.Log;
 import android.widget.Toast;
@@ -27,7 +26,6 @@ import android.content.Intent;
 
 public class ClipText extends Activity {
 
-    @SuppressWarnings("deprecation") // Keep backward compatibility for under HONEYCOME
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -37,13 +35,9 @@ public class ClipText extends Activity {
         Log.d("ClipText", "TEXT: " + text);
 
         if (text != null) {
-            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.HONEYCOMB) {
-                ((android.text.ClipboardManager)(getSystemService(CLIPBOARD_SERVICE))).setText(text);
-            } else {
-                ClipData clip = ClipData.newPlainText("url text", text);
-                ClipboardManager cm = (ClipboardManager)getSystemService(CLIPBOARD_SERVICE);
-                cm.setPrimaryClip(clip);
-            }
+            ClipData clip = ClipData.newPlainText("url text", text);
+            ClipboardManager cm = (ClipboardManager)getSystemService(CLIPBOARD_SERVICE);
+            cm.setPrimaryClip(clip);
             Toast.makeText(getApplicationContext(),
                        getString(R.string.toast_copy_url), Toast.LENGTH_LONG).show();
         }
