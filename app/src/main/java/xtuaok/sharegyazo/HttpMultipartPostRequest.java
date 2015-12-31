@@ -71,16 +71,17 @@ public class HttpMultipartPostRequest {
             conn.setReadTimeout(60 * 1000);
             conn.setDoOutput(true);
             conn.connect();
-
             os = new DataOutputStream(conn.getOutputStream());
             os.writeBytes(createBoundaryMessage("imagedata"));
 
-           do {
-               int bytes_read = fis.read(buffer, 0, bufferSize);
-               os.write(buffer, 0, bytes_read);
-               int percent = (int)(((float)(fileSize - fis.available()) / ((float)fileSize)) * 100);
-               if (percent == 100) { percent = 99; }
-               mService.seProgress(percent);
+            mService.seProgress(0);
+
+            do {
+                int bytes_read = fis.read(buffer, 0, bufferSize);
+                os.write(buffer, 0, bytes_read);
+                int percent = (int)(((float)(fileSize - fis.available()) / ((float)fileSize)) * 100);
+                if (percent == 100) { percent = 99; }
+                mService.seProgress(percent);
             } while (fis.available() > 0);
 
             String endBoundary = "\r\n--" + BOUNDARY + "--\r\n";
@@ -110,7 +111,7 @@ public class HttpMultipartPostRequest {
                     os.close();
                 }
                 if (conn != null) ((HttpURLConnection) conn).disconnect();
-            }catch (IOException e) {
+            } catch (IOException e) {
                 Log.e(LOG_TAG, "IOError", e);
             }
         }

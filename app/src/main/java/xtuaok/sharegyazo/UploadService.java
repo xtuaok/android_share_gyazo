@@ -286,18 +286,22 @@ public class UploadService extends IntentService {
 
     private Matrix getRotatedMatrix(Uri uri, Matrix matrix){
         ExifInterface exif = null;
-
+        Log.d(LOG_TAG, "Check EXIF Orientation");
         if (uri.getScheme().equals("content")) {
             String[] projection = { MediaStore.Images.ImageColumns.ORIENTATION };
             Cursor c = getContentResolver().query(uri, projection, null, null, null);
             if (c.moveToFirst()) {
-                return matrix;
+                int or = c.getInt(0);
+                matrix.postRotate(or);
+                Log.d(LOG_TAG, "Orientation: " + or);
             }
+            return matrix;
         } else if (uri.getScheme().equals("file")) {
             try {
                 exif = new ExifInterface(uri.getPath());
             } catch (IOException e) {
                 Log.e(LOG_TAG, "Error checking exif", e);
+                return matrix;
             }
         } else {
             return matrix;
@@ -309,30 +313,39 @@ public class UploadService extends IntentService {
 
         switch (orientation) {
             case ExifInterface.ORIENTATION_UNDEFINED:
+                Log.d(LOG_TAG, "Orientation: UNDEFINED");
                 break;
             case ExifInterface.ORIENTATION_NORMAL:
+                Log.d(LOG_TAG, "Orientation: NORMAL");
                 break;
             case ExifInterface.ORIENTATION_FLIP_HORIZONTAL:
+                Log.d(LOG_TAG, "Orientation: FLIP_HORIZONTAL");
                 matrix.postScale(-1f, 1f);
                 break;
             case ExifInterface.ORIENTATION_ROTATE_180:
+                Log.d(LOG_TAG, "Orientation: ROTATE_180");
                 matrix.postRotate(180f);
                 break;
             case ExifInterface.ORIENTATION_FLIP_VERTICAL:
+                Log.d(LOG_TAG, "Orientation: FLIP_VERTICAL");
                 matrix.postScale(1f, -1f);
                 break;
             case ExifInterface.ORIENTATION_ROTATE_90:
+                Log.d(LOG_TAG, "Orientation: ROTATE_90");
                 matrix.postRotate(90f);
                 break;
             case ExifInterface.ORIENTATION_TRANSVERSE:
+                Log.d(LOG_TAG, "Orientation: TRANSVERSE");
                 matrix.postRotate(-90f);
                 matrix.postScale(1f, -1f);
                 break;
             case ExifInterface.ORIENTATION_TRANSPOSE:
+                Log.d(LOG_TAG, "Orientation: TRANSPOSE");
                 matrix.postRotate(90f);
                 matrix.postScale(1f, -1f);
                 break;
             case ExifInterface.ORIENTATION_ROTATE_270:
+                Log.d(LOG_TAG, "Orientation: ROTATE_270");
                 matrix.postRotate(-90f);
                 break;
         }
@@ -406,6 +419,9 @@ public class UploadService extends IntentService {
         } catch (IOException e2) {
             Log.e(LOG_TAG, "IOError", e2);
             mErrorMessage = "IOError";
+        } catch (Exception ex) {
+            Log.e(LOG_TAG, "Unhandled Exception", ex);
+            mErrorMessage = "Error: "+ex.getMessage();
         }
         return result;
     }
