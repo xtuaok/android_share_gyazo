@@ -19,7 +19,7 @@
     <string name="dialog_gyazo_id">Gyazoアップローダで使うID</string>
     <string name="message_gyazo_id">わからなければ空のままに</string>
 
-    <string name="category_behavior_url">取得したGyazo URLの挙動</string>
+    <string name="category_behavior_url">アップロード後自動実行する動作</string>
     <string name="copy_gyazo_url_title">画像のURLをコピー</string>
     
     <string name="copy_gyazo_url_summary">Gyazoから取得した画像URLをクリップボードにコピーする</string>
@@ -47,8 +47,13 @@
 
     <string name="image_format">画像フォーマット</string>
     <string name="image_file_format">ファイルフォーマット</string>
-    <string name="image_quality">画像品質</string>
+    <string name="image_quality">JPEG品質</string>
     <string name="image_quality_value">品質値 (0&#8211;100)</string>
 
-    <string name="convert_image">画像を変換中...</string>
+    <string name="convert_image">画像を変換中&#8211;</string>
+
+    <string name="opensource_license">オープンソースライセンス</string>
+
+    <string name="share_app_summary">Copyright &#169; 2016 Tomonori Tamagawa.\nここをタップしてこのアプリを友人に紹介する</string>
+    <string name="share_app_text">お手軽Gyazoアップロードアプリ ShareGyazo をPlay Storeからダウンロードしましょう！ https://play.google.com/store/apps/details?id=xtuaok.sharegyazo</string>
 </resources>

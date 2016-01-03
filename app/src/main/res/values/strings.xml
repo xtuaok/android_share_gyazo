@@ -5,7 +5,7 @@
     <string name="title_activity_share_gyazo">ShareGyazo</string>
     <string name="toast_copy_url">Image URL copied into Clipboard.</string>
     <string name="dialog_message_done">Upload completed.</string>
-    <string name="dialog_message_uploading">Uploading&#8230;</string>
+    <string name="dialog_message_uploading">Upload in progress&#8230;</string>
     <string name="title_activity_preference">ShareGyazo Settings</string>
     <string name="failed_to_upload">Failed to upload.</string>
     <string name="message_uploaded">Image uploaded</string>
@@ -18,7 +18,7 @@
     <string name="dialog_gyazo_id">ID for Gyazo uploader</string>
     <string name="message_gyazo_id">Keep empty if you don\'t know.</string>
 
-    <string name="category_behavior_url">Behavior for gyazo URL</string>
+    <string name="category_behavior_url">Auto action after uploading</string>
     <string name="copy_gyazo_url_title">Copy image URL</string>
     <string name="copy_gyazo_url_summary">Copy gyazo URL text into clipboard.</string>
 
@@ -46,8 +46,13 @@
 
     <string name="image_format">Image Format</string>
     <string name="image_file_format">File Format</string>
-    <string name="image_quality">Image Quality</string>
-    <string name="image_quality_value">Image Quality Value (0&#8211;100)</string>
+    <string name="image_quality">JPEG Quality</string>
+    <string name="image_quality_value">JPEG Quality Value (0&#8211;100)</string>
 
-    <string name="convert_image">Converting image...</string>
+    <string name="convert_image">Converting image&#8211;</string>
+
+    <string name="opensource_license">Open Source Licenses</string>
+
+    <string name="share_app_summary">Copyright &#169; 2016 Tomonori Tamagawa.\nTap here to share this app with your friends.</string>
+    <string name="share_app_text">ShareGyazo the handy gyazo uploader app, get it from Play Store! https://play.google.com/store/apps/details?id=xtuaok.sharegyazo</string>
 </resources>

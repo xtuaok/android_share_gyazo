@@ -38,32 +38,32 @@
     <PreferenceCategory
         android:title="@string/category_behavior_url"
         android:key="cateogry_gyazo_url">
-        <CheckBoxPreference
+        <SwitchPreference
             android:title="@string/copy_gyazo_url_title"
             android:summary="@string/copy_gyazo_url_summary"
             android:key="copy_gyazo_url"
             android:defaultValue="true" />
-        <CheckBoxPreference
+        <SwitchPreference
             android:title="@string/open_url"
             android:summary="@string/open_url_browser_summary"
             android:key="open_url_browser"
             android:defaultValue="false" />
-        <CheckBoxPreference
+        <SwitchPreference
             android:title="@string/share_url"
             android:summary="@string/share_url_text_summary"
             android:key="share_url_text"
-            android:defaultValue="true" />
+            android:defaultValue="false" />
     </PreferenceCategory>
 
     <PreferenceCategory
         android:title="@string/notifications"
         android:key="category_notification">
-        <CheckBoxPreference
+        <SwitchPreference
             android:title="@string/pref_show_notification_title"
             android:summary="@string/pref_show_notification_summary"
             android:defaultValue="true"
             android:key="show_notification"/>
-        <CheckBoxPreference
+        <SwitchPreference
             android:title="@string/pref_auto_close_notification_title"
             android:summary="@string/pref_auto_close_notification_summary"
             android:key="auto_close_notification"
@@ -78,6 +78,27 @@
              android:defaultValue="1"
             android:summary="%s"
              android:dependency="show_notification" />
+    </PreferenceCategory>
+    <PreferenceCategory android:title="About">
+        <Preference
+            android:selectable="true"
+            android:enabled="true"
+            android:key="opensource_license"
+            android:title="@string/opensource_license"
+            />
+        <Preference
+            android:selectable="true"
+            android:enabled="true"
+            android:key="about"
+            android:title="@string/app_name"
+            android:summary="@string/share_app_summary">
+            <intent android:action="android.intent.action.SEND"
+                android:mimeType="text/plain">
+                <extra
+                    android:name="android.intent.extra.TEXT"
+                    android:value="@string/share_app_text" />
+            </intent>
+        </Preference>
     </PreferenceCategory>
 
 </PreferenceScreen>

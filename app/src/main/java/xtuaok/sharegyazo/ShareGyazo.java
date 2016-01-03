@@ -21,11 +21,21 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.app.Activity;
 import android.content.Intent;
+import android.util.Log;
+
+import java.io.BufferedOutputStream;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
 
 public class ShareGyazo extends Activity {
+    private static final String LOG_TAG = "ShareGyazo";
+    private static final int BUFSIZ = 4096;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
+        File temp;
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_share_gyazo);
 
@@ -37,12 +47,29 @@ public class ShareGyazo extends Activity {
             finish();
             return;
         }
+        Log.d(LOG_TAG, "Writing temporary file");
+        // copy to cache (Security reason)
+        try {
+            byte[] buff = new byte[BUFSIZ];
+            InputStream is = getApplicationContext().getContentResolver().openInputStream(uri);
+            temp = File.createTempFile("temp", ".bin", getCacheDir());
+            BufferedOutputStream bos = new BufferedOutputStream(new FileOutputStream(temp));
+            while (is.available() > 0) {
+                int r = is.read(buff, 0, BUFSIZ);
+                bos.write(buff, 0, r);
+            }
+            bos.flush();
+            bos.close();
+        } catch (IOException e) {
+            Log.e(LOG_TAG, "IOError", e);
+            finish();
+            return;
+        }
 
-        Intent intent = new Intent(this, UploadService.class);
-        intent.setFlags(Intent.FLAG_ACTIVITY_NO_HISTORY | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-        intent.setData(uri);
+        Intent intent = new Intent(ShareGyazo.this, UploadService.class);
+        // intent.setFlags(Intent.FLAG_ACTIVITY_NO_HISTORY | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+        intent.setData(Uri.fromFile(temp));
         startService(intent);
         finish();
     }
-
 }

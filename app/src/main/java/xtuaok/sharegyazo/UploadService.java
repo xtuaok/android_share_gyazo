@@ -15,20 +15,13 @@
  */
 package xtuaok.sharegyazo;
 
+import java.io.BufferedOutputStream;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
-import java.security.Guard;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 import android.os.Debug;
-import android.provider.MediaStore;
-import android.util.Pair;
-
-import android.database.Cursor;
 import android.graphics.Matrix;
 import android.media.ExifInterface;
 import android.preference.PreferenceManager;
@@ -42,7 +35,6 @@ import android.content.SharedPreferences;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Bitmap.CompressFormat;
-import android.support.v4.app.NotificationCompat;
 import android.util.Log;
 import android.widget.Toast;
 
@@ -51,15 +43,25 @@ import android.content.Intent;
 import android.net.Uri;
 import android.os.Handler;
 
+import com.squareup.okhttp.Headers;
+import com.squareup.okhttp.MediaType;
+import com.squareup.okhttp.MultipartBuilder;
+import com.squareup.okhttp.OkHttpClient;
+import com.squareup.okhttp.Request;
+import com.squareup.okhttp.RequestBody;
+import com.squareup.okhttp.Response;
+
 public class UploadService extends IntentService {
     private static final String LOG_TAG = "GyazoUploadService";
     private static final String DEFAULT_UPLOADER = "http://gyazo.com/upload.cgi";
 
-    private static final int NOTIFY_UPLOADING = 0x0;
-    private static final int NOTIFY_DONE      = 0x1;
+    private static final int NOTIFY_ONGOING   = 0x0;
+    private static final int NOTIFY_UPLOADING = 0x1;
+    private static final int NOTIFY_DONE      = 0x2;
     
     private Handler mHandler;
     private Context mContext;
+    private File mCacheFile;
     private String mGyazoCGI;
     private String mGyazoID;
     private boolean mCopyURL;
@@ -70,28 +72,48 @@ public class UploadService extends IntentService {
     private int mNotifyAction;
     private boolean mNotifyClose;
     private boolean mNotification;
-    private Bitmap mBitmap = null;
+    private Notification.Builder mUploadNotify;
     private NotificationManager mNotificationManager;
-    private Uri mUri;
     private String mErrorMessage = "";
-
     private static final int MAX_IMAGE_PIXEL = 1920; // HD
+
+    private boolean mIsRetry = false;
 
     public UploadService(String name) {
         super(name);
+        setIntentRedelivery(true);
+        mHandler = new Handler();
     }
 
     public UploadService() {
         super("UploadService");
+        setIntentRedelivery(true);
         mHandler = new Handler();
     }
 
     @Override
+    public void onCreate()
+    {
+        super.onCreate();
+        startForeground(NOTIFY_ONGOING, new Notification());
+    }
+
+    @Override
+    public int onStartCommand(Intent intent, int flags, int start_id)
+    {
+        if (flags == START_FLAG_REDELIVERY) {
+            mIsRetry = true;
+        }
+        Log.d(LOG_TAG, "onStartCommand: " + flags);
+        return super.onStartCommand(intent, flags, start_id);
+    }
+    @Override
     protected void onHandleIntent(Intent intent) {
         SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getBaseContext());
         String result = "";
+        Uri uri = intent.getData();
+        File file = new File(uri.getPath());
 
-        mUri = intent.getData();
         mContext = getApplicationContext();
         mGyazoCGI = prefs.getString(GyazoPreference.PREF_GYAZO_CGI, DEFAULT_UPLOADER);
         mGyazoID  = prefs.getString(GyazoPreference.PREF_GYAZO_ID, "");
@@ -108,94 +130,122 @@ public class UploadService extends IntentService {
 
         // Notify UPLOADING
         Intent notifIntent = new Intent();
-        notifIntent.addCategory(Intent.CATEGORY_DEFAULT);
-        notifIntent.setAction(Intent.ACTION_VIEW);
-        notifIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-        notifIntent.setData(mUri);
         PendingIntent pendingIntent = PendingIntent.getActivity(this, 0, notifIntent, PendingIntent.FLAG_UPDATE_CURRENT);
 
-        NotificationCompat.Builder builder = new NotificationCompat.Builder(this);
-        builder.setContentTitle(getString(R.string.dialog_message_uploading))
-            .setProgress(100, 0, false)
-            .setContentText(getString(R.string.convert_image))
-            .setPriority(Notification.PRIORITY_DEFAULT)
-            .setSmallIcon(android.R.drawable.stat_sys_upload)
-            .setTicker(getString(R.string.dialog_message_uploading))
-            .setContentIntent(pendingIntent)
-            .setOngoing(true)
-            .setAutoCancel(mNotifyClose);
+        mUploadNotify = new Notification.Builder(this);
+        mUploadNotify.setContentTitle(getString(R.string.app_name))
+                .setProgress(0, 0, true)
+                .setContentText(getString(R.string.convert_image))
+                .setPriority(Notification.PRIORITY_DEFAULT)
+                .setSmallIcon(android.R.drawable.stat_sys_upload)
+                .setTicker(getString(R.string.dialog_message_uploading))
+                .setContentIntent(pendingIntent)
+                .setOngoing(true)
+                .setAutoCancel(mNotifyClose);
 
         if (mNotification) {
-            mNotificationManager.notify(NOTIFY_UPLOADING,  builder.build());
+            mNotificationManager.notify(NOTIFY_UPLOADING, mUploadNotify.build());
         }
-        mHandler.post(new Runnable() {
-            public void run() {
-                Toast.makeText(mContext, getString(R.string.dialog_message_uploading), Toast.LENGTH_LONG).show();                
-            }
-        });
+        if (!mIsRetry) {
+            mHandler.post(new Runnable() {
+                public void run() {
+                    Toast.makeText(mContext, getString(R.string.dialog_message_uploading), Toast.LENGTH_LONG).show();
+                }
+            });
+        } else {
+            if (! file.exists()) return;
+        }
 
-        result = doUpload(mGyazoCGI, mUri);
-        done(result, mUri);
+        result = doUpload(mGyazoCGI, file);
+        notify(result);
+        file.deleteOnExit();
+        stopForeground(true);
     }
-    
-    @SuppressWarnings("deprecation")
-    private void done(String result, Uri uri) {
+
+    /**
+     *  Notify result to user
+     *
+     * @param result  HTTP result string.
+     */
+    private void notify(String result) {
+        Bitmap bitmap = null;
         Intent intent = new Intent();
         PendingIntent intentView = null;
         PendingIntent intentSend = null;
         PendingIntent intentCopy = null;
 
-        Log.i(LOG_TAG, "Result: " + result);
-        if (mErrorMessage != "") {
-            mHandler.post(new Runnable() {            
+        Log.i(LOG_TAG, "DONE: result: " + result);
+        if (! mErrorMessage.isEmpty()) {
+            mHandler.post(new Runnable() {
                 public void run() {
                     Toast.makeText(mContext, mErrorMessage, Toast.LENGTH_LONG).show();
                 }
             });
         }
 
-        if (result == null || !result.startsWith("http")) {
+        /*
+         * Get the bitmap for notification image.
+         */
+        if (mCacheFile != null && mCacheFile.exists()) {
+            BitmapFactory.Options opts = new BitmapFactory.Options();
+            opts.inJustDecodeBounds = true;
+            BitmapFactory.decodeFile(mCacheFile.getPath(), opts);
+            int size = Math.max(opts.outHeight, opts.outHeight);
+            opts.inSampleSize = 1;
+            while (size / opts.inSampleSize > MAX_IMAGE_PIXEL) {
+                opts.inSampleSize = opts.inSampleSize * 2;
+            }
+            opts.inJustDecodeBounds = false;
+            bitmap = BitmapFactory.decodeFile(mCacheFile.getPath(), opts);
+            mCacheFile.delete();
+        }
+
+        if (result == null || result.isEmpty() || !result.startsWith("http")) {
+            Intent emptyIntent = new Intent();
+            PendingIntent pendingIntent = PendingIntent.getActivity(this, 0, emptyIntent, PendingIntent.FLAG_UPDATE_CURRENT);
+
             mNotificationManager.cancel(NOTIFY_UPLOADING);
 
-            Intent notifIntent = new Intent();
-            notifIntent.addCategory(Intent.CATEGORY_DEFAULT);
-            notifIntent.setAction(Intent.ACTION_VIEW);
-            notifIntent.setData(uri);
+            Notification.Builder builder = new Notification.Builder(this);
+            builder.setContentTitle(getString(R.string.app_name))
+                    .setContentText(getString(R.string.failed_to_upload))
+                    .setPriority(Notification.PRIORITY_HIGH)
+                    .setSmallIcon(R.drawable.ic_warning_24dp)
+                    .setTicker(getString(R.string.failed_to_upload))
+                    .setContentIntent(pendingIntent)
+                    .setAutoCancel(true)
+                    .setAutoCancel(mNotifyClose);
 
-            PendingIntent pendingIntent = PendingIntent.getActivity(this, 0, notifIntent, PendingIntent.FLAG_UPDATE_CURRENT);
-            NotificationCompat.Builder builder = new NotificationCompat.Builder(this);
-            builder.setContentTitle(getString(R.string.failed_to_upload))
-                .setPriority(Notification.PRIORITY_HIGH)
-                .setSmallIcon(android.R.drawable.ic_menu_report_image)
-                .setTicker(getString(R.string.failed_to_upload))
-                .setContentIntent(pendingIntent)
-                .setAutoCancel(true)
-                .setAutoCancel(mNotifyClose);
-
-            builder.setLargeIcon(mBitmap);
+            if (bitmap != null) {
+                builder.setLargeIcon(bitmap);
+            }
 
             if (mNotification) {
                 mNotificationManager.notify(NOTIFY_UPLOADING, builder.build());
             }
-            if (mBitmap != null && !mBitmap.isRecycled()) {
-                mBitmap.recycle();
-            }
-            mHandler.post(new Runnable() {            
+
+            mHandler.post(new Runnable() {
                 public void run() {
                     Toast.makeText(mContext, getString(R.string.failed_to_upload), Toast.LENGTH_LONG).show();
                 }
             });
+            if (bitmap != null && !bitmap.isRecycled())
+                bitmap.recycle();
             return;
-        }
+        } /* failed */
 
+        /*
+         * convert Image URL for gyazo.com
+         */
         if (mGyazoCGI.contains("://gyazo.com/") &&
                 result.startsWith("https://gyazo.com/")) {
             String ext = ".png";
-            String hash = result.substring(17, result.length());
-            if (mFormat == 1) ext = ".png";
+            String hash = result.substring(18, result.length()).replaceAll("[\n\r]", "");
+            if (mFormat == 1) ext = ".jpg";
             result = "https://i.gyazo.com/" + hash + ext;
         }
 
+        /* auto copy */
         if (mCopyURL) {
             ClipData clip = ClipData.newPlainText("url text", result);
             ClipboardManager cm = (ClipboardManager)getSystemService(CLIPBOARD_SERVICE);
@@ -208,13 +258,14 @@ public class UploadService extends IntentService {
             });
         }
 
+        /* auto open URL */
         if (mOpenURL) {
             intent.setAction(Intent.ACTION_VIEW);
             intent.addCategory(Intent.CATEGORY_BROWSABLE);
             intent.setData(Uri.parse(result));
             intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
             mContext.startActivity(intent);
-        } else if (mShareURL) {
+        } else if (mShareURL) { /* auto share URL */
             intent.setAction(Intent.ACTION_SEND);
             intent.setType("text/plain");
             intent.addCategory(Intent.CATEGORY_DEFAULT);
@@ -223,48 +274,48 @@ public class UploadService extends IntentService {
             mContext.startActivity(intent);
         }
 
-        if (!mNotification) {
-            return;
-        }
+        if (!mNotification) return;
+
         // Notifications
-        Intent notifyIntent;
+        Intent actionIntent;
 
         // VIEW
-        notifyIntent = new Intent();
-        notifyIntent.setAction(Intent.ACTION_VIEW);
-        notifyIntent.addCategory(Intent.CATEGORY_BROWSABLE);
-        notifyIntent.setData(Uri.parse(result));
-        notifyIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-        intentView = PendingIntent.getActivity(mContext, 0, notifyIntent, PendingIntent.FLAG_UPDATE_CURRENT);
+        actionIntent = new Intent();
+        actionIntent.setAction(Intent.ACTION_VIEW);
+        actionIntent.addCategory(Intent.CATEGORY_BROWSABLE);
+        actionIntent.setData(Uri.parse(result));
+        actionIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        intentView = PendingIntent.getActivity(mContext, 0, actionIntent, PendingIntent.FLAG_UPDATE_CURRENT);
 
         // SEND
-        notifyIntent = new Intent();
-        notifyIntent.setAction(Intent.ACTION_SEND);
-        notifyIntent.setType("text/plain");
-        notifyIntent.addCategory(Intent.CATEGORY_DEFAULT);
-        notifyIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-        notifyIntent.putExtra(Intent.EXTRA_TEXT, result);
-        intentSend = PendingIntent.getActivity(mContext, 0, notifyIntent, PendingIntent.FLAG_UPDATE_CURRENT);
+        actionIntent = new Intent();
+        actionIntent.setAction(Intent.ACTION_SEND);
+        actionIntent.setType("text/plain");
+        actionIntent.addCategory(Intent.CATEGORY_DEFAULT);
+        actionIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        actionIntent.putExtra(Intent.EXTRA_TEXT, result);
+        intentSend = PendingIntent.getActivity(mContext, 0, actionIntent, PendingIntent.FLAG_UPDATE_CURRENT);
 
         // COPY
-        notifyIntent = new Intent(mContext, ClipText.class);
-        notifyIntent.setAction(Intent.ACTION_MAIN);
-        notifyIntent.putExtra(Intent.EXTRA_TEXT, result);
-        notifyIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-        intentCopy = PendingIntent.getActivity(mContext, 0, notifyIntent, PendingIntent.FLAG_UPDATE_CURRENT);
+        actionIntent = new Intent(mContext, ClipText.class);
+        actionIntent.setAction(Intent.ACTION_MAIN);
+        actionIntent.putExtra(Intent.EXTRA_TEXT, result);
+        actionIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        intentCopy = PendingIntent.getActivity(mContext, 0, actionIntent, PendingIntent.FLAG_UPDATE_CURRENT);
 
         // build
         Notification.Builder builder = new Notification.Builder(this);
-        builder.setContentTitle(getString(R.string.message_uploaded))
-            .setSmallIcon(android.R.drawable.stat_sys_upload_done)
-            .addAction(android.R.drawable.ic_menu_view, getString(R.string.open), intentView)
-            .addAction(android.R.drawable.ic_menu_share, getString(R.string.share), intentSend)
-            .addAction(android.R.drawable.ic_menu_set_as, getString(R.string.copy), intentCopy)
-            .setTicker(result)
-            .setContentText(result)
-            .setPriority(Notification.PRIORITY_DEFAULT)
-            .setAutoCancel(mNotifyClose);
-            // Tap actions
+        builder.setContentTitle(getString(R.string.app_name))
+                .setContentText(getString(R.string.message_uploaded))
+                .setTicker(result)
+                .setSmallIcon(R.drawable.ic_cloud_done_24dp)
+                .setLargeIcon(bitmap)
+                .addAction(R.drawable.ic_open_in_browser_24dp, getString(R.string.open), intentView)
+                .addAction(R.drawable.ic_share_24dp, getString(R.string.share), intentSend)
+                .addAction(R.drawable.ic_content_copy_24dp, getString(R.string.copy), intentCopy)
+                .setAutoCancel(mNotifyClose);
+
+        // Tap actions
         if (mNotifyAction == 1) {
             builder.setContentIntent(intentView);
         } else if (mNotifyAction == 2) {
@@ -272,144 +323,161 @@ public class UploadService extends IntentService {
         } else if (mNotifyAction == 3) {
             builder.setContentIntent(intentCopy);
         }
+
         builder.setStyle(new Notification.BigPictureStyle()
-        .bigPicture(mBitmap)
-        .bigLargeIcon(BitmapFactory.decodeResource(getResources(), R.drawable.ic_launcher))
-        .setBigContentTitle(getString(R.string.message_uploaded))
-        .setSummaryText(result));
+                .bigPicture(bitmap)
+                .bigLargeIcon(BitmapFactory.decodeResource(getResources(), R.drawable.ic_launcher))
+                .setBigContentTitle(getString(R.string.message_uploaded))
+                .setSummaryText(result));
         mNotificationManager.cancel(NOTIFY_UPLOADING);
         mNotificationManager.notify(result, NOTIFY_DONE, builder.build());
-        if (mBitmap != null && !mBitmap.isRecycled()) {
-            mBitmap.recycle();
-        }
+
+        if (bitmap != null && ! bitmap.isRecycled())
+            bitmap.recycle();
     }
 
-    private Matrix getRotatedMatrix(Uri uri, Matrix matrix){
-        ExifInterface exif = null;
+    /**
+     * get image orientation and set into matrix
+     *
+     * @param path      path to image file (JPEG)
+     * @param matrix    matrix
+     * @return          rotated or not
+     */
+    private boolean rotatedMatrix(String path, Matrix matrix) {
+        boolean rotate = false;
         Log.d(LOG_TAG, "Check EXIF Orientation");
-        if (uri.getScheme().equals("content")) {
-            String[] projection = { MediaStore.Images.ImageColumns.ORIENTATION };
-            Cursor c = getContentResolver().query(uri, projection, null, null, null);
-            if (c.moveToFirst()) {
-                int or = c.getInt(0);
-                matrix.postRotate(or);
-                Log.d(LOG_TAG, "Orientation: " + or);
+        try {
+            ExifInterface exif = new ExifInterface(path);
+            int orientation = exif.getAttributeInt(ExifInterface.TAG_ORIENTATION,
+                    ExifInterface.ORIENTATION_UNDEFINED);
+            switch (orientation) {
+                case 0: // ExifInterface.ORIENTATION_UNDEFINED:
+                    Log.d(LOG_TAG, "Orientation: UNDEFINED");
+                    break;
+                case 1: // ExifInterface.ORIENTATION_NORMAL:
+                    Log.d(LOG_TAG, "Orientation: NORMAL");
+                    break;
+                case 2: // ExifInterface.ORIENTATION_FLIP_HORIZONTAL:
+                    Log.d(LOG_TAG, "Orientation: FLIP_HORIZONTAL");
+                    matrix.postScale(-1f, 1f);
+                    break;
+                case 3: // ExifInterface.ORIENTATION_ROTATE_180:
+                    Log.d(LOG_TAG, "Orientation: ROTATE_180");
+                    matrix.postRotate(180f);
+                    break;
+                case 4: // ExifInterface.ORIENTATION_FLIP_VERTICAL:
+                    Log.d(LOG_TAG, "Orientation: FLIP_VERTICAL");
+                    matrix.postScale(1f, -1f);
+                    break;
+                case 5: // ExifInterface.ORIENTATION_TRANSVERSE:
+                    Log.d(LOG_TAG, "Orientation: TRANSVERSE");
+                    matrix.postRotate(-90f);
+                    matrix.postScale(1f, -1f);
+                    break;
+                case 6: // ExifInterface.ORIENTATION_ROTATE_90:
+                    Log.d(LOG_TAG, "Orientation: ROTATE_90");
+                    matrix.postRotate(90f);
+                    break;
+                case 7: // ExifInterface.ORIENTATION_TRANSPOSE:
+                    Log.d(LOG_TAG, "Orientation: TRANSPOSE");
+                    matrix.postRotate(90f);
+                    matrix.postScale(1f, -1f);
+                    break;
+                case 8: // ExifInterface.ORIENTATION_ROTATE_270:
+                    Log.d(LOG_TAG, "Orientation: ROTATE_270");
+                    matrix.postRotate(-90f);
+                    break;
             }
-            return matrix;
-        } else if (uri.getScheme().equals("file")) {
-            try {
-                exif = new ExifInterface(uri.getPath());
-            } catch (IOException e) {
-                Log.e(LOG_TAG, "Error checking exif", e);
-                return matrix;
-            }
-        } else {
-            return matrix;
+            if (orientation >= 2) rotate = true;
+        } catch (Exception ex) {
+            Log.e(LOG_TAG, "Exception: ", ex);
         }
-
-        int orientation = exif.getAttributeInt(
-                ExifInterface.TAG_ORIENTATION,
-                ExifInterface.ORIENTATION_UNDEFINED);
-
-        switch (orientation) {
-            case ExifInterface.ORIENTATION_UNDEFINED:
-                Log.d(LOG_TAG, "Orientation: UNDEFINED");
-                break;
-            case ExifInterface.ORIENTATION_NORMAL:
-                Log.d(LOG_TAG, "Orientation: NORMAL");
-                break;
-            case ExifInterface.ORIENTATION_FLIP_HORIZONTAL:
-                Log.d(LOG_TAG, "Orientation: FLIP_HORIZONTAL");
-                matrix.postScale(-1f, 1f);
-                break;
-            case ExifInterface.ORIENTATION_ROTATE_180:
-                Log.d(LOG_TAG, "Orientation: ROTATE_180");
-                matrix.postRotate(180f);
-                break;
-            case ExifInterface.ORIENTATION_FLIP_VERTICAL:
-                Log.d(LOG_TAG, "Orientation: FLIP_VERTICAL");
-                matrix.postScale(1f, -1f);
-                break;
-            case ExifInterface.ORIENTATION_ROTATE_90:
-                Log.d(LOG_TAG, "Orientation: ROTATE_90");
-                matrix.postRotate(90f);
-                break;
-            case ExifInterface.ORIENTATION_TRANSVERSE:
-                Log.d(LOG_TAG, "Orientation: TRANSVERSE");
-                matrix.postRotate(-90f);
-                matrix.postScale(1f, -1f);
-                break;
-            case ExifInterface.ORIENTATION_TRANSPOSE:
-                Log.d(LOG_TAG, "Orientation: TRANSPOSE");
-                matrix.postRotate(90f);
-                matrix.postScale(1f, -1f);
-                break;
-            case ExifInterface.ORIENTATION_ROTATE_270:
-                Log.d(LOG_TAG, "Orientation: ROTATE_270");
-                matrix.postRotate(-90f);
-                break;
-        }
-        return matrix;
+        return rotate;
     }
 
-    private String doUpload(String cgi, Uri uri) {
-        String result = "";
-        InputStream is;
+    /**
+     * convert image file for uploading
+     *
+     * @param file          The file object to convert
+     * @return              new File object in cacheDir, should be deleted when exit.
+     * @throws IOException
+     */
+    private File convertImageFile(File file) throws IOException
+    {
+        BufferedOutputStream os;
+        File temp = null;
+        BitmapFactory.Options options = new BitmapFactory.Options();
+        Matrix matrix = new Matrix();
+
+        options.inJustDecodeBounds = true;
+        BitmapFactory.decodeFile(file.getPath(), options);
+        Log.d(LOG_TAG, "ImageType: " + options.outMimeType);
+
+        // rotate by exif
+        boolean rotate = false;
+        if ("image/jpeg".equalsIgnoreCase(options.outMimeType)) {
+            rotate = rotatedMatrix(file.getPath(), matrix);
+        }
+
+        // sampling size
+        options.inSampleSize = 1;
+        long memRequire = ((options.outWidth / options.inSampleSize) * (options.outHeight / options.inSampleSize)) * 4;
+        Log.d(LOG_TAG, "Require mem: " + memRequire);
+        Log.d(LOG_TAG, "Free memory: " + getFreeMemory());
+        while (memRequire > getFreeMemory()) {
+            options.inSampleSize = options.inSampleSize * 2;
+            memRequire = ((options.outWidth / options.inSampleSize) * (options.outHeight / options.inSampleSize)) * 4;
+        }
+
+        // resize if required
+        int w = options.outWidth;
+        int h = options.outHeight;
+        float scale = Math.min((float)1.0, Math.min((float) MAX_IMAGE_PIXEL / w, (float) MAX_IMAGE_PIXEL / h));
+        if (scale < 1.0) {
+            matrix.postScale(scale, scale);
+        }
+        Log.d(LOG_TAG, "Size: w:" + w + ", h:" + h);
+        Log.d(LOG_TAG, "On memory sample size: " + options.inSampleSize);
+        Log.d(LOG_TAG, "Upload scale: " + scale);
+        // create resized bitmap
+        options.inJustDecodeBounds = false;
+        Bitmap bitmap = BitmapFactory.decodeFile(file.getPath(), options);
+        if (rotate || scale < 1.0) {
+            Bitmap r_bitmap = Bitmap.createBitmap(bitmap, 0, 0, w, h, matrix, true);
+            bitmap.recycle();
+            bitmap = r_bitmap;
+        }
+
+        Log.d(LOG_TAG, "Write a cache file");
+        if (mFormat == 0) { // PNG
+            temp = File.createTempFile("temp", "png", getCacheDir());
+            os = new BufferedOutputStream(new FileOutputStream(temp));
+            bitmap.compress(CompressFormat.PNG, mQuality, os);
+        } else { // JPEG
+            temp = File.createTempFile("temp", "jpg", getCacheDir());
+            os = new BufferedOutputStream(new FileOutputStream(temp));
+            bitmap.compress(CompressFormat.JPEG, mQuality, os);
+        }
+        os.flush();
+        os.close();
+        bitmap.recycle();
+
+        return temp;
+    }
+
+    /**
+     * do upload
+     *
+     * @param cgi       absolute URL String
+     * @param source    upload source file
+     * @return          result string (HTTP Response Body), {@code null} if failed to upload.
+     */
+    private String doUpload(String cgi, File source) {
+        String result = null;
 
         try {
-            BitmapFactory.Options options = new BitmapFactory.Options();
-            Matrix matrix = new Matrix();
-
-            // get file information
-            is = getContentResolver().openInputStream(uri);
-            options.inJustDecodeBounds = true;
-            Bitmap bitmap = BitmapFactory.decodeStream(is, null, options);
-            Log.d(LOG_TAG, "ImageType: " + options.outMimeType);
-
-            // rotate by exif
-            if ("image/jpeg".equalsIgnoreCase(options.outMimeType)) {
-                matrix = getRotatedMatrix(uri, matrix);
-            }
-
-            // sampling size
-            options.inSampleSize = 1;
-            long memRequire = ((options.outWidth / options.inSampleSize) * (options.outHeight / options.inSampleSize)) * 4;
-            while (memRequire > getFreeMemory()) {
-                options.inSampleSize = options.inSampleSize * 2;
-                memRequire = ((options.outWidth / options.inSampleSize) * (options.outHeight / options.inSampleSize)) * 4;
-            }
-
-            // resize if required
-            int w = options.outWidth;
-            int h = options.outHeight;
-            float scale = Math.min((float) MAX_IMAGE_PIXEL / w, (float) MAX_IMAGE_PIXEL / h);
-            if (scale < 1.0) {
-                matrix.postScale(scale, scale);
-            }
-            Log.d(LOG_TAG, "SampleSize: " + options.inSampleSize);
-            Log.d(LOG_TAG, "Scale: " + scale);
-
-            // create resized bitmap
-            options.inJustDecodeBounds = false;
-            is = getContentResolver().openInputStream(uri);
-            bitmap = BitmapFactory.decodeStream(is, null, options);
-            mBitmap = Bitmap.createBitmap(bitmap, 0, 0, w, h, matrix, true);
-
-            // temporary file
-            File tempFile = null;
-            FileOutputStream os = null;
-            if (mFormat == 0) { // PNG
-                tempFile = File.createTempFile("temp", "png", getCacheDir());
-                os = new FileOutputStream(tempFile);
-                mBitmap.compress(CompressFormat.PNG, mQuality, os);
-            } else { // JPEG
-                tempFile = File.createTempFile("temp", "jpg", getCacheDir());
-                os = new FileOutputStream(tempFile);
-                mBitmap.compress(CompressFormat.JPEG, mQuality, os);
-            }
-            os.flush();
-            os.close();
-            result = postGyazo(cgi, tempFile);
+            mCacheFile = convertImageFile(source);
+            result = postGyazo(cgi, mCacheFile);
         } catch (OutOfMemoryError e0) {
             Log.e(LOG_TAG, "OutOfMemory", e0);
             mErrorMessage = "Out of Memory";
@@ -421,46 +489,86 @@ public class UploadService extends IntentService {
             mErrorMessage = "IOError";
         } catch (Exception ex) {
             Log.e(LOG_TAG, "Unhandled Exception", ex);
-            mErrorMessage = "Error: "+ex.getMessage();
+            mErrorMessage = "Error: " + ex.getMessage();
         }
         return result;
     }
 
+    /**
+     * post to gyazo cgi server
+     *
+     * @param cgi . absolute URL of CGI as String
+     * @param file . upload file object
+     * @return result string
+     * @throws IOException
+     */
     private String postGyazo(String cgi, File file) throws IOException {
-        List<Pair<String,String >> nValuePairs = new ArrayList<Pair<String,String>>();
-        nValuePairs.add(new Pair<>("id", mGyazoID));
-        String ret;
-        HttpMultipartPostRequest request = new HttpMultipartPostRequest(cgi, nValuePairs, file, this);
-        Log.d(LOG_TAG, "send POST request");
-        ret = request.send();
-        return ret;
+        String result = "";
+        OkHttpClient client = new OkHttpClient();
+        final long totalSize = file.length();
+
+        client.setConnectTimeout(15, TimeUnit.SECONDS);
+        client.setReadTimeout(15, TimeUnit.SECONDS);
+        client.setWriteTimeout(15, TimeUnit.SECONDS);
+
+        Log.d(LOG_TAG, "Create request body: GyazoID: " + mGyazoID);
+        setProgress(0);
+        RequestBody requestBody = new MultipartBuilder()
+                .type(MultipartBuilder.FORM)
+                .addFormDataPart("id", mGyazoID)
+                .addFormDataPart("imagedata", file.getName(),
+                        new CountingFileRequestBody(file, "image/*", new CountingFileRequestBody.ProgressListener() {
+                            private int previous = 0;
+
+                            @Override
+                            public void transferred(long num) {
+                                float progress = (num / (float) totalSize) * 100;
+                                if ((int) progress <= previous) return;
+                                previous = (int)progress;
+                                setProgress(previous);
+                            }
+                        }))
+                .build();
+        Request request = new Request.Builder()
+                .url(cgi)
+                .post(requestBody)
+                .build();
+        try {
+            Log.d(LOG_TAG, "Post execute");
+            Response response = client.newCall(request).execute();
+            String gyazo_id = response.headers().get("X-Gyazo-Id");
+            Log.d(LOG_TAG, "GyazoID: " + gyazo_id);
+            if (gyazo_id != null && mGyazoID.isEmpty()) {
+                PreferenceManager.getDefaultSharedPreferences(getBaseContext()).edit().putString(GyazoPreference.PREF_GYAZO_ID, gyazo_id).commit();
+            }
+            result = response.body().string();
+            Log.d(LOG_TAG, "Response Body: " + result);
+        } catch (IOException e) {
+            Log.e(LOG_TAG, "HTTP Error", e);
+        }
+        return result;
     }
 
+    /**
+     *
+     * get free memory byte count
+     * @return byte count
+     */
     private static long getFreeMemory() {
         Runtime r = Runtime.getRuntime();
         return r.maxMemory() - (r.totalMemory() - r.freeMemory())
                 - Debug.getNativeHeapAllocatedSize();
     }
 
-    public void seProgress(int perc) {
+    /**
+     * set upload progress as percent
+     *
+     * @param percent upload progress percentage.
+     */
+    public void setProgress(int percent) {
         if (!mNotification) return;
-        Intent notifIntent = new Intent();
-        notifIntent.addCategory(Intent.CATEGORY_DEFAULT);
-        notifIntent.setAction(Intent.ACTION_VIEW);
-        notifIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-        notifIntent.setData(mUri);
-        PendingIntent pendingIntent = PendingIntent.getActivity(this, 0, notifIntent, PendingIntent.FLAG_UPDATE_CURRENT);
-
-        NotificationCompat.Builder builder = new NotificationCompat.Builder(this);
-        builder.setContentTitle(getString(R.string.dialog_message_uploading))
-                .setProgress(100, perc, false)
-                .setPriority(Notification.PRIORITY_DEFAULT)
-                .setSmallIcon(android.R.drawable.stat_sys_upload)
-                .setTicker(getString(R.string.dialog_message_uploading))
-                .setContentText(perc + "%")
-                .setContentIntent(pendingIntent)
-                .setOngoing(true)
-                .setAutoCancel(mNotifyClose);
-        mNotificationManager.notify(NOTIFY_UPLOADING, builder.build());
+        mUploadNotify.setProgress(100, percent, false)
+                .setContentText(getString(R.string.dialog_message_uploading) + " " + percent + "%");
+        mNotificationManager.notify(NOTIFY_UPLOADING, mUploadNotify.build());
     }
 }

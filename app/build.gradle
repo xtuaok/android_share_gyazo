@@ -1,23 +1,29 @@
 apply plugin: 'com.android.application'
-
 android {
     compileSdkVersion 23
     buildToolsVersion "23.0.2"
-
     defaultConfig {
         applicationId "xtuaok.sharegyazo"
         minSdkVersion 19
         targetSdkVersion 23
+        versionCode 15
+        versionName '1.6'
     }
-
     buildTypes {
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.txt'
         }
     }
-
-    dependencies {
-        compile "com.android.support:support-v4:23.0.+"
+    productFlavors {
     }
+    sourceSets {
+        main {
+            assets.srcDirs = ["src/main/assets"]
+        }
+    }
+}
+
+dependencies {
+    compile 'com.squareup.okhttp:okhttp:2.7.1'
 }

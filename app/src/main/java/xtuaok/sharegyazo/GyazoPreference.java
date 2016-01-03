@@ -17,21 +17,20 @@
 package xtuaok.sharegyazo;
 
 import android.app.Activity;
-import android.app.Notification;
+import android.app.AlertDialog;
 import android.content.SharedPreferences;
 import android.os.Bundle;
-import android.preference.CheckBoxPreference;
 import android.preference.EditTextPreference;
-import android.preference.ListPreference;
 import android.preference.Preference;
 import android.preference.Preference.OnPreferenceChangeListener;
 import android.preference.PreferenceFragment;
 import android.preference.PreferenceManager;
+import android.preference.SwitchPreference;
 import android.text.InputFilter;
 import android.text.Spanned;
+import android.webkit.WebView;
 
 public class GyazoPreference extends Activity {
-    public static final String SHARED_PREF = GyazoPreference.class.toString();
     public static final String PREF_GYAZO_CGI = "gyazo_cgi_url";
     public static final String PREF_GYAZO_ID = "gyazo_cgi_id";
     public static final String PREF_COPY_URL = "copy_gyazo_url";
@@ -71,7 +70,7 @@ public class GyazoPreference extends Activity {
             editTextPref.setSummary(editTextPref.getText());
             editTextPref.setOnPreferenceChangeListener(new OnPreferenceChangeListener() {
                 public boolean onPreferenceChange(Preference preference, Object newValue) {
-                    ((EditTextPreference) preference).setSummary(newValue.toString());
+                    preference.setSummary(newValue.toString());
                     return true;
                 }
             });
@@ -80,7 +79,7 @@ public class GyazoPreference extends Activity {
             editTextPref.setSummary(editTextPref.getText());
             editTextPref.setOnPreferenceChangeListener(new OnPreferenceChangeListener() {
                 public boolean onPreferenceChange(Preference preference, Object newValue) {
-                    ((EditTextPreference) preference).setSummary(newValue.toString());
+                    preference.setSummary(newValue.toString());
                     return true;
                 }
             });
@@ -90,7 +89,7 @@ public class GyazoPreference extends Activity {
             editTextPref.setSummary(editTextPref.getText());
             editTextPref.setOnPreferenceChangeListener(new OnPreferenceChangeListener() {
                 public boolean onPreferenceChange(Preference preference, Object newValue) {
-                    ((EditTextPreference) preference).setSummary(newValue.toString());
+                    preference.setSummary(newValue.toString());
                     return true;
                 }
             });
@@ -100,46 +99,59 @@ public class GyazoPreference extends Activity {
                 prefs.edit().putBoolean(PREF_SHARE_TEXT, false).commit();
             }
 
-            CheckBoxPreference checkBoxPref;
-            checkBoxPref = (CheckBoxPreference) findPreference(PREF_OPEN_BROWSER);
+            SwitchPreference checkBoxPref;
+            checkBoxPref = (SwitchPreference) findPreference(PREF_OPEN_BROWSER);
 
             checkBoxPref.setOnPreferenceChangeListener(new OnPreferenceChangeListener() {
                 public boolean onPreferenceChange(Preference preference, Object newValue) {
-                    CheckBoxPreference p2 = (CheckBoxPreference) findPreference(PREF_SHARE_TEXT);
+                    SwitchPreference p2 = (SwitchPreference) findPreference(PREF_SHARE_TEXT);
                     if (newValue.toString().equals("true")) {
-                        p2.setEnabled(false);
-                    } else {
-                        p2.setEnabled(true);
+                        p2.setChecked(false);
                     }
                     return true;
                 }
             });
-            checkBoxPref = (CheckBoxPreference) findPreference(PREF_SHARE_TEXT);
 
+            checkBoxPref = (SwitchPreference) findPreference(PREF_SHARE_TEXT);
             checkBoxPref.setOnPreferenceChangeListener(new OnPreferenceChangeListener() {
                 public boolean onPreferenceChange(Preference preference, Object newValue) {
-                    CheckBoxPreference p2 = (CheckBoxPreference) findPreference(PREF_OPEN_BROWSER);
+                    SwitchPreference p2 = (SwitchPreference) findPreference(PREF_OPEN_BROWSER);
                     if (newValue.toString().equals("true")) {
-                        p2.setEnabled(false);
-                    } else {
-                        p2.setEnabled(true);
+                        p2.setChecked(false);
                     }
                     return true;
                 }
             });
+
             fixCheck();
+
+            findPreference("about").setTitle(getString(R.string.app_name) + " " + BuildConfig.VERSION_NAME);
+            Preference p = findPreference("opensource_license");
+            p.setOnPreferenceClickListener(new Preference.OnPreferenceClickListener() {
+                @Override
+                public boolean onPreferenceClick(Preference preference) {
+                    WebView webview = new WebView(getActivity());
+                    webview.loadUrl("file:///android_asset/licenses.html");
+                    AlertDialog.Builder builder = new AlertDialog.Builder(getActivity());
+                    builder.setTitle(getString(R.string.opensource_license))
+                            .setPositiveButton(getString(android.R.string.ok), null)
+                            .setView(webview)
+                            .show();
+                    return false;
+                }
+            });
         }
 
         private void fixCheck() {
             SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getActivity());
-            CheckBoxPreference checkBoxPref;
-            checkBoxPref = (CheckBoxPreference) findPreference(PREF_SHARE_TEXT);
-            if (prefs.getBoolean(PREF_OPEN_BROWSER, false) == true) {
-                checkBoxPref.setEnabled(false);
+            SwitchPreference checkBoxPref;
+            checkBoxPref = (SwitchPreference) findPreference(PREF_SHARE_TEXT);
+            if (prefs.getBoolean(PREF_OPEN_BROWSER, false)) {
+                checkBoxPref.setChecked(false);
             }
-            checkBoxPref = (CheckBoxPreference) findPreference(PREF_OPEN_BROWSER);
-            if (prefs.getBoolean(PREF_SHARE_TEXT, false) == true) {
-                checkBoxPref.setEnabled(false);
+            checkBoxPref = (SwitchPreference) findPreference(PREF_OPEN_BROWSER);
+            if (prefs.getBoolean(PREF_SHARE_TEXT, false)) {
+                checkBoxPref.setChecked(false);
             }
         }
 
@@ -163,7 +175,8 @@ public class GyazoPreference extends Activity {
                     int input = Integer.parseInt(dest.toString() + source.toString());
                     if (isInRange(min, max, input))
                         return null;
-                } catch (NumberFormatException nfe) { }
+                } catch (NumberFormatException nfe) {
+                }
                 return "";
             }
 
