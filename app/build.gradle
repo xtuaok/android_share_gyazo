@@ -6,7 +6,7 @@ android {
         applicationId "xtuaok.sharegyazo"
         minSdkVersion 19
         targetSdkVersion 23
-        versionCode 15
+        versionCode 16
         versionName '1.6'
     }
     buildTypes {
