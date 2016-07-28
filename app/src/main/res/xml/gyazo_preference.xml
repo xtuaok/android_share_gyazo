@@ -1,40 +1,23 @@
 <?xml version="1.0" encoding="utf-8"?>
-<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android" >
-    <PreferenceCategory android:title="Gyazo CGI" android:key="category_gyazo_cgi">
-        <EditTextPreference
-            android:positiveButtonText="@string/ok"
-            android:negativeButtonText="@string/cancel"
-            android:dialogMessage="@string/message_gyazo_uploader"
-            android:dialogTitle="@string/dialog_gyazo_uploader"
-            android:key="gyazo_cgi_url"
-            android:title="Gyazo URL"
-            android:defaultValue="http://gyazo.com/upload.cgi"/>
-        <EditTextPreference
-            android:positiveButtonText="@string/ok"
-            android:negativeButtonText="@string/cancel"
-            android:dialogMessage="@string/message_gyazo_id"
-            android:dialogTitle="@string/dialog_gyazo_id"
-            android:key="gyazo_cgi_id"
-            android:title="Gyazo ID" />
-    </PreferenceCategory>
-    <PreferenceCategory android:title="@string/image_format" android:key="category_image_format">
+<PreferenceScreen
+    xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <PreferenceCategory
+        android:title="@string/category_profiles"
+        android:key="category_profiles">
+
+        <Preference
+            android:key="server_profile_list"
+            android:fragment="xtuaok.sharegyazo.ProfileListFragment"
+            android:title="@string/server_profiles">
+        </Preference>
         <ListPreference
-            android:dialogTitle="@string/image_file_format"
-            android:key="image_file_format"
-            android:title="@string/image_file_format"
-            android:entries="@array/image_format_entries"
-            android:entryValues="@array/image_format_values"
+            android:dialogTitle="@string/default_profile"
+            android:key="default_profile"
             android:summary="%s"
-            android:defaultValue="0" />
-        <EditTextPreference android:positiveButtonText="@string/ok"
-            android:negativeButtonText="@string/cancel"
-            android:dialogMessage="@string/image_quality_value"
-            android:dialogTitle="@string/image_quality_value"
-            android:key="image_quality"
-            android:inputType="numberDecimal"
-            android:defaultValue="100"
-            android:title="@string/image_quality" />
+            android:title="@string/default_profile" />
     </PreferenceCategory>
+
     <PreferenceCategory
         android:title="@string/category_behavior_url"
         android:key="cateogry_gyazo_url">
@@ -76,7 +59,7 @@
              android:entries="@array/notify_action_entries"
              android:entryValues="@array/notify_action_values"
              android:defaultValue="1"
-            android:summary="%s"
+             android:summary="%s"
              android:dependency="show_notification" />
     </PreferenceCategory>
     <PreferenceCategory android:title="About">
@@ -92,12 +75,6 @@
             android:key="about"
             android:title="@string/app_name"
             android:summary="@string/share_app_summary">
-            <intent android:action="android.intent.action.SEND"
-                android:mimeType="text/plain">
-                <extra
-                    android:name="android.intent.extra.TEXT"
-                    android:value="@string/share_app_text" />
-            </intent>
         </Preference>
     </PreferenceCategory>
 

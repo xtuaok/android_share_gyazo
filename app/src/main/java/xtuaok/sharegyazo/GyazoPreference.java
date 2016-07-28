@@ -16,23 +16,38 @@
 
 package xtuaok.sharegyazo;
 
-import android.app.Activity;
+import android.animation.Animator;
+import android.animation.AnimatorListenerAdapter;
+import android.animation.ObjectAnimator;
 import android.app.AlertDialog;
+import android.app.FragmentManager;
+import android.app.FragmentTransaction;
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
-import android.preference.EditTextPreference;
+import android.preference.ListPreference;
 import android.preference.Preference;
 import android.preference.Preference.OnPreferenceChangeListener;
 import android.preference.PreferenceFragment;
 import android.preference.PreferenceManager;
 import android.preference.SwitchPreference;
-import android.text.InputFilter;
-import android.text.Spanned;
+import android.support.v7.app.AppCompatActivity;
+import android.util.Log;
+import android.view.LayoutInflater;
+import android.view.MenuItem;
+import android.view.View;
+import android.view.ViewGroup;
 import android.webkit.WebView;
 
-public class GyazoPreference extends Activity {
-    public static final String PREF_GYAZO_CGI = "gyazo_cgi_url";
-    public static final String PREF_GYAZO_ID = "gyazo_cgi_id";
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
+
+public class GyazoPreference extends AppCompatActivity {
+    private static final String LOG_TAG = "GyazoPreference";
+
+    /* general */
+    public static final String PREF_DEFAULT_PROFILE = "default_profile";
     public static final String PREF_COPY_URL = "copy_gyazo_url";
     public static final String PREF_OPEN_BROWSER = "open_url_browser";
     public static final String PREF_SHARE_TEXT = "share_url_text";
@@ -40,69 +55,135 @@ public class GyazoPreference extends Activity {
     public static final String PREF_SHOW_NOTIFICATION = "show_notification";
     public static final String PREF_AUTO_CLOSE_NOTIFICATION = "auto_close_notification";
 
-    public static final String PREF_IMAGE_FILE_FORMAT = "image_file_format";
-    public static final String PREF_IMAGE_QUALITY = "image_quality";
+    /* Item as button */
+    private static final String PREF_SERVER_PROFILE_LIST = "server_profile_list";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        setContentView(R.layout.main);
+
+        getFragmentManager()
+                .addOnBackStackChangedListener(new FragmentManager.OnBackStackChangedListener() {
+                    @Override
+                    public void onBackStackChanged() {
+                        shouldDisplayHomeUp();
+                    }
+                });
 
         // Display the fragment as the main content.
-        getFragmentManager().beginTransaction().replace(android.R.id.content,
-                new GyazoPreferenceFragment()).commit();
+        getFragmentManager()
+                .beginTransaction()
+                .setTransition(FragmentTransaction.TRANSIT_FRAGMENT_OPEN)
+                .replace(R.id.container, new GyazoPreferenceFragment())
+                .commit();
+        shouldDisplayHomeUp();
+    }
+
+    private void shouldDisplayHomeUp() {
+        boolean canback = getFragmentManager().getBackStackEntryCount()>0;
+        getSupportActionBar().setDisplayHomeAsUpEnabled(canback);
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        switch (item.getItemId()) {
+            case android.R.id.home:
+                getFragmentManager().popBackStack();
+            default:
+                return super.onOptionsItemSelected(item);
+        }
     }
 
     public static class GyazoPreferenceFragment extends PreferenceFragment {
+        private ProfileManager mProfileManager;
+        private int mContainerHeight;
 
+        @Override
+        public void onActivityCreated(Bundle savedInstanceState) {
+            super.onActivityCreated(savedInstanceState);
+            ((AppCompatActivity) getActivity()).getSupportActionBar().setTitle(R.string.title_activity_preference);
+        }
 
         public GyazoPreferenceFragment() {
             // Required empty public constructor
         }
 
         @Override
+        public void onResume() {
+            super.onResume();
+            ListPreference lp = (ListPreference) findPreference(PREF_DEFAULT_PROFILE);
+            lp.setValue(mProfileManager.getDefaultProfileUUID());
+            fixSwitchPrefs();
+        }
+
+        @Override
+        public View onCreateView (LayoutInflater inflater,
+                           ViewGroup container,
+                           Bundle savedInstanceState) {
+            mContainerHeight = getActivity().findViewById(android.R.id.content).getHeight();
+            final View fab = getActivity().findViewById(R.id.profile_add_fab);
+            final float y = fab.getY();
+            if (fab.getVisibility() == View.VISIBLE) {
+                fab.animate()
+                        .y(mContainerHeight)
+                        .setDuration(200)
+                        .setListener(new AnimatorListenerAdapter() {
+                    @Override
+                    public void onAnimationEnd(Animator animation) {
+                        super.onAnimationEnd(animation);
+                        fab.setVisibility(View.GONE);
+                        fab.setY(y);
+                    }
+                });
+            }
+            fillProfileList();
+            return super.onCreateView(inflater, container,savedInstanceState);
+        }
+
+        @Override
         public void onCreate(Bundle savedInstanceState) {
             super.onCreate(savedInstanceState);
+            addPreferencesFromResource(R.xml.gyazo_preference);
+            mProfileManager = ProfileManager.getInstance(getActivity());
             SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getActivity());
-            addPreferencesFromResource(R.xml.preference);
+            /* move to profile list setting */
+            Preference p = findPreference(PREF_SERVER_PROFILE_LIST);
+            p.setOnPreferenceClickListener(new Preference.OnPreferenceClickListener() {
+                @Override
+                public boolean onPreferenceClick(Preference preference) {
+                    ProfileListFragment fragment = new ProfileListFragment();
+                    getFragmentManager()
+                            .beginTransaction()
+                            .setTransition(FragmentTransaction.TRANSIT_FRAGMENT_OPEN)
+                            .replace(R.id.container, fragment)
+                            .addToBackStack(null)
+                            .commit();
+                    return false;
+                }
+            });
 
-            EditTextPreference editTextPref;
-            editTextPref = (EditTextPreference) findPreference(PREF_GYAZO_CGI);
-            editTextPref.setSummary(editTextPref.getText());
-            editTextPref.setOnPreferenceChangeListener(new OnPreferenceChangeListener() {
+            /* Default profile setting */
+            ListPreference lp = (ListPreference)findPreference(PREF_DEFAULT_PROFILE);
+            lp.setOnPreferenceChangeListener(new OnPreferenceChangeListener() {
+                @Override
                 public boolean onPreferenceChange(Preference preference, Object newValue) {
-                    preference.setSummary(newValue.toString());
+                    String uuid = (String) newValue;
+                    mProfileManager.setDefaultProfile(uuid);
                     return true;
                 }
             });
 
-            editTextPref = (EditTextPreference) findPreference(PREF_GYAZO_ID);
-            editTextPref.setSummary(editTextPref.getText());
-            editTextPref.setOnPreferenceChangeListener(new OnPreferenceChangeListener() {
-                public boolean onPreferenceChange(Preference preference, Object newValue) {
-                    preference.setSummary(newValue.toString());
-                    return true;
-                }
-            });
-
-            editTextPref = (EditTextPreference) findPreference(PREF_IMAGE_QUALITY);
-            editTextPref.getEditText().setFilters(new InputFilter[]{ new InputFilterMinMax("0", "100")});
-            editTextPref.setSummary(editTextPref.getText());
-            editTextPref.setOnPreferenceChangeListener(new OnPreferenceChangeListener() {
-                public boolean onPreferenceChange(Preference preference, Object newValue) {
-                    preference.setSummary(newValue.toString());
-                    return true;
-                }
-            });
-
+            /* fix check box */
             if (prefs.getBoolean(PREF_OPEN_BROWSER, false) &&
                     prefs.getBoolean(PREF_SHARE_TEXT, false)) {
-                prefs.edit().putBoolean(PREF_SHARE_TEXT, false).commit();
+                prefs.edit().putBoolean(PREF_SHARE_TEXT, false).apply();
             }
 
-            SwitchPreference checkBoxPref;
-            checkBoxPref = (SwitchPreference) findPreference(PREF_OPEN_BROWSER);
-
-            checkBoxPref.setOnPreferenceChangeListener(new OnPreferenceChangeListener() {
+            /* Open Browser */
+            SwitchPreference sw;
+            sw = (SwitchPreference) findPreference(PREF_OPEN_BROWSER);
+            sw.setOnPreferenceChangeListener(new OnPreferenceChangeListener() {
                 public boolean onPreferenceChange(Preference preference, Object newValue) {
                     SwitchPreference p2 = (SwitchPreference) findPreference(PREF_SHARE_TEXT);
                     if (newValue.toString().equals("true")) {
@@ -112,8 +193,9 @@ public class GyazoPreference extends Activity {
                 }
             });
 
-            checkBoxPref = (SwitchPreference) findPreference(PREF_SHARE_TEXT);
-            checkBoxPref.setOnPreferenceChangeListener(new OnPreferenceChangeListener() {
+            /* Share url text */
+            sw = (SwitchPreference) findPreference(PREF_SHARE_TEXT);
+            sw.setOnPreferenceChangeListener(new OnPreferenceChangeListener() {
                 public boolean onPreferenceChange(Preference preference, Object newValue) {
                     SwitchPreference p2 = (SwitchPreference) findPreference(PREF_OPEN_BROWSER);
                     if (newValue.toString().equals("true")) {
@@ -123,10 +205,9 @@ public class GyazoPreference extends Activity {
                 }
             });
 
-            fixCheck();
-
-            findPreference("about").setTitle(getString(R.string.app_name) + " " + BuildConfig.VERSION_NAME);
-            Preference p = findPreference("opensource_license");
+            /* About */
+            /* OpenSource License */
+            p = findPreference("opensource_license");
             p.setOnPreferenceClickListener(new Preference.OnPreferenceClickListener() {
                 @Override
                 public boolean onPreferenceClick(Preference preference) {
@@ -140,49 +221,72 @@ public class GyazoPreference extends Activity {
                     return false;
                 }
             });
-        }
 
-        private void fixCheck() {
-            SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getActivity());
-            SwitchPreference checkBoxPref;
-            checkBoxPref = (SwitchPreference) findPreference(PREF_SHARE_TEXT);
-            if (prefs.getBoolean(PREF_OPEN_BROWSER, false)) {
-                checkBoxPref.setChecked(false);
-            }
-            checkBoxPref = (SwitchPreference) findPreference(PREF_OPEN_BROWSER);
-            if (prefs.getBoolean(PREF_SHARE_TEXT, false)) {
-                checkBoxPref.setChecked(false);
-            }
-        }
-
-        public class InputFilterMinMax implements InputFilter {
-
-            private int min, max;
-
-            public InputFilterMinMax(int min, int max) {
-                this.min = min;
-                this.max = max;
-            }
-
-            public InputFilterMinMax(String min, String max) {
-                this.min = Integer.parseInt(min);
-                this.max = Integer.parseInt(max);
-            }
-
-            @Override
-            public CharSequence filter(CharSequence source, int start, int end, Spanned dest, int dstart, int dend) {
-                try {
-                    int input = Integer.parseInt(dest.toString() + source.toString());
-                    if (isInRange(min, max, input))
-                        return null;
-                } catch (NumberFormatException nfe) {
+            /* Share it */
+            p = findPreference("about");
+            p.setTitle(getString(R.string.app_name) + " " + BuildConfig.VERSION_NAME);
+            p.setOnPreferenceClickListener(new Preference.OnPreferenceClickListener() {
+                @Override
+                public boolean onPreferenceClick(Preference preference) {
+                    Intent intent = new Intent();
+                    intent.setAction(Intent.ACTION_SEND);
+                    intent.setType("text/plain");
+                    intent.putExtra(Intent.EXTRA_TEXT, getString(R.string.share_app_text));
+                    startActivity(intent);
+                    return false;
                 }
-                return "";
-            }
+            });
+        }
 
-            private boolean isInRange(int a, int b, int c) {
-                return b > a ? c >= a && c <= b : c >= b && c <= a;
+        private void fixSwitchPrefs() {
+            SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getActivity());
+            SwitchPreference sp = (SwitchPreference) findPreference(PREF_SHARE_TEXT);
+            if (prefs.getBoolean(PREF_OPEN_BROWSER, false)) {
+                sp.setChecked(false);
             }
+            sp = (SwitchPreference) findPreference(PREF_OPEN_BROWSER);
+            if (prefs.getBoolean(PREF_SHARE_TEXT, false)) {
+                sp.setChecked(false);
+            }
+        }
+
+        private void fillProfileList() {
+            ListPreference profList = (ListPreference) findPreference(PREF_DEFAULT_PROFILE);
+            Iterator iter = mProfileManager.getProfiles().iterator();
+            List<String> entries = new ArrayList<>();
+            List<String> values = new ArrayList<>();
+            entries.add(getString(R.string.none));
+            values.add("");
+            while(iter.hasNext()) {
+                Profile prof = (Profile) iter.next();
+                entries.add(prof.getName());
+                values.add(prof.getUUID());
+            }
+            profList.setEntries(entries.toArray(new String[entries.size()]));
+            profList.setEntryValues(values.toArray(new String[values.size()]));
+        }
+
+        /*
+         * FIXME: it won't work at the 1st time. (OPEN:false)
+         */
+        @Override
+        public Animator onCreateAnimator(int transit, boolean enter, int nextAnim) {
+            ViewGroup vg = (ViewGroup) getActivity().findViewById(android.R.id.content);
+            int w = vg.getWidth();
+            if (transit == FragmentTransaction.TRANSIT_FRAGMENT_OPEN) {
+                if (enter) {
+                    return ObjectAnimator.ofFloat(getView(), "x", w, 0.0f).setDuration(200);
+                } else {
+                    return ObjectAnimator.ofFloat(getView(), "x", 0.0f, -w).setDuration(200);
+                }
+            } else if (transit == FragmentTransaction.TRANSIT_FRAGMENT_CLOSE) {
+                if (enter) {
+                    return ObjectAnimator.ofFloat(getView(), "x", -w, 0.0f).setDuration(200);
+                } else {
+                    return ObjectAnimator.ofFloat(getView(), "x", 0.0f, w).setDuration(200);
+                }
+            }
+            return super.onCreateAnimator(transit, enter, nextAnim);
         }
     }
 }

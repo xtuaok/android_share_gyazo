@@ -20,7 +20,7 @@
     </string-array>
 
     <string-array name="image_format_values" translatable="false">
-        <item>0</item>
-        <item>1</item>
+        <item>png</item>
+        <item>jpg</item>
     </string-array>
 </resources>

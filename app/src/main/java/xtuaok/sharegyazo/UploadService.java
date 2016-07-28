@@ -35,6 +35,7 @@ import android.content.SharedPreferences;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Bitmap.CompressFormat;
+import android.support.v7.app.NotificationCompat;
 import android.util.Log;
 import android.widget.Toast;
 
@@ -43,8 +44,6 @@ import android.content.Intent;
 import android.net.Uri;
 import android.os.Handler;
 
-import com.squareup.okhttp.Headers;
-import com.squareup.okhttp.MediaType;
 import com.squareup.okhttp.MultipartBuilder;
 import com.squareup.okhttp.OkHttpClient;
 import com.squareup.okhttp.Request;
@@ -53,7 +52,6 @@ import com.squareup.okhttp.Response;
 
 public class UploadService extends IntentService {
     private static final String LOG_TAG = "GyazoUploadService";
-    private static final String DEFAULT_UPLOADER = "http://gyazo.com/upload.cgi";
 
     private static final int NOTIFY_ONGOING   = 0x0;
     private static final int NOTIFY_UPLOADING = 0x1;
@@ -62,12 +60,13 @@ public class UploadService extends IntentService {
     private Handler mHandler;
     private Context mContext;
     private File mCacheFile;
+    private Profile mProfile;
     private String mGyazoCGI;
     private String mGyazoID;
     private boolean mCopyURL;
     private boolean mOpenURL;
     private boolean mShareURL;
-    private int mFormat;
+    private String mFormat;
     private int mQuality;
     private int mNotifyAction;
     private boolean mNotifyClose;
@@ -107,20 +106,25 @@ public class UploadService extends IntentService {
         Log.d(LOG_TAG, "onStartCommand: " + flags);
         return super.onStartCommand(intent, flags, start_id);
     }
+
+    /**
+     *  TODO: should choose preference by ID
+     */
     @Override
     protected void onHandleIntent(Intent intent) {
         SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getBaseContext());
         String result = "";
         Uri uri = intent.getData();
         File file = new File(uri.getPath());
+        mProfile = intent.getParcelableExtra("profile");
 
         mContext = getApplicationContext();
-        mGyazoCGI = prefs.getString(GyazoPreference.PREF_GYAZO_CGI, DEFAULT_UPLOADER);
-        mGyazoID  = prefs.getString(GyazoPreference.PREF_GYAZO_ID, "");
+        mGyazoCGI = mProfile.getURL();
+        mGyazoID  = mProfile.getGyazoID();
         mCopyURL  = prefs.getBoolean(GyazoPreference.PREF_COPY_URL, true);
         mOpenURL  = prefs.getBoolean(GyazoPreference.PREF_OPEN_BROWSER, false);
-        mFormat = Integer.parseInt(prefs.getString(GyazoPreference.PREF_IMAGE_FILE_FORMAT, "0"));
-        mQuality = Integer.parseInt(prefs.getString(GyazoPreference.PREF_IMAGE_QUALITY, "100"));
+        mFormat = mProfile.getFormat();
+        mQuality = mProfile.getImageQuality();
         mShareURL = prefs.getBoolean(GyazoPreference.PREF_SHARE_TEXT, true);
         mNotifyAction = Integer.parseInt(prefs.getString(GyazoPreference.PREF_NOTIFY_ACTION, "0"));
         mNotifyClose = prefs.getBoolean(GyazoPreference.PREF_AUTO_CLOSE_NOTIFICATION, false);
@@ -158,7 +162,7 @@ public class UploadService extends IntentService {
 
         result = doUpload(mGyazoCGI, file);
         notify(result);
-        file.deleteOnExit();
+        file.delete();
         stopForeground(true);
     }
 
@@ -207,11 +211,12 @@ public class UploadService extends IntentService {
             mNotificationManager.cancel(NOTIFY_UPLOADING);
 
             Notification.Builder builder = new Notification.Builder(this);
-            builder.setContentTitle(getString(R.string.app_name))
-                    .setContentText(getString(R.string.failed_to_upload))
+            builder.setStyle(new Notification.BigTextStyle()
+                    .setSummaryText(getString(R.string.failed_to_upload))
+                    .bigText(getString(R.string.failed_to_upload_detail)))
+                    .setContentTitle(getString(R.string.app_name))
                     .setPriority(Notification.PRIORITY_HIGH)
-                    .setSmallIcon(R.drawable.ic_warning_24dp)
-                    .setTicker(getString(R.string.failed_to_upload))
+                    .setSmallIcon(R.drawable.ic_warning_white_24dp)
                     .setContentIntent(pendingIntent)
                     .setAutoCancel(true)
                     .setAutoCancel(mNotifyClose);
@@ -239,9 +244,8 @@ public class UploadService extends IntentService {
          */
         if (mGyazoCGI.contains("://gyazo.com/") &&
                 result.startsWith("https://gyazo.com/")) {
-            String ext = ".png";
+            String ext = "." + mFormat;
             String hash = result.substring(18, result.length()).replaceAll("[\n\r]", "");
-            if (mFormat == 1) ext = ".jpg";
             result = "https://i.gyazo.com/" + hash + ext;
         }
 
@@ -304,16 +308,24 @@ public class UploadService extends IntentService {
         intentCopy = PendingIntent.getActivity(mContext, 0, actionIntent, PendingIntent.FLAG_UPDATE_CURRENT);
 
         // build
-        Notification.Builder builder = new Notification.Builder(this);
+        NotificationCompat.Builder builder = new NotificationCompat.Builder(this);
         builder.setContentTitle(getString(R.string.app_name))
                 .setContentText(getString(R.string.message_uploaded))
                 .setTicker(result)
                 .setSmallIcon(R.drawable.ic_cloud_done_24dp)
                 .setLargeIcon(bitmap)
-                .addAction(R.drawable.ic_open_in_browser_24dp, getString(R.string.open), intentView)
-                .addAction(R.drawable.ic_share_24dp, getString(R.string.share), intentSend)
-                .addAction(R.drawable.ic_content_copy_24dp, getString(R.string.copy), intentCopy)
                 .setAutoCancel(mNotifyClose);
+
+        NotificationCompat.Action action =
+                new NotificationCompat.Action.Builder(R.drawable.ic_open_in_browser_24dp,
+                        getString(R.string.open), intentView).build();
+        builder.addAction(action);
+        action = new NotificationCompat.Action.Builder(R.drawable.ic_share_24dp,
+                getString(R.string.share), intentSend).build();
+        builder.addAction(action);
+        action =  new NotificationCompat.Action.Builder(R.drawable.ic_content_copy_24dp,
+                getString(R.string.copy), intentCopy).build();
+        builder.addAction(action);
 
         // Tap actions
         if (mNotifyAction == 1) {
@@ -324,7 +336,7 @@ public class UploadService extends IntentService {
             builder.setContentIntent(intentCopy);
         }
 
-        builder.setStyle(new Notification.BigPictureStyle()
+        builder.setStyle(new NotificationCompat.BigPictureStyle()
                 .bigPicture(bitmap)
                 .bigLargeIcon(BitmapFactory.decodeResource(getResources(), R.drawable.ic_launcher))
                 .setBigContentTitle(getString(R.string.message_uploaded))
@@ -449,7 +461,7 @@ public class UploadService extends IntentService {
         }
 
         Log.d(LOG_TAG, "Write a cache file");
-        if (mFormat == 0) { // PNG
+        if (mFormat == "png") { // PNG
             temp = File.createTempFile("temp", "png", getCacheDir());
             os = new BufferedOutputStream(new FileOutputStream(temp));
             bitmap.compress(CompressFormat.PNG, mQuality, os);
@@ -539,7 +551,10 @@ public class UploadService extends IntentService {
             String gyazo_id = response.headers().get("X-Gyazo-Id");
             Log.d(LOG_TAG, "GyazoID: " + gyazo_id);
             if (gyazo_id != null && mGyazoID.isEmpty()) {
-                PreferenceManager.getDefaultSharedPreferences(getBaseContext()).edit().putString(GyazoPreference.PREF_GYAZO_ID, gyazo_id).commit();
+                ProfileManager pm = ProfileManager.getInstance(getBaseContext());
+                Profile p = pm.getProfileByUUID(mProfile.getUUID());
+                p.setGyazoID(gyazo_id);
+                pm.storeProfiles();
             }
             result = response.body().string();
             Log.d(LOG_TAG, "Response Body: " + result);

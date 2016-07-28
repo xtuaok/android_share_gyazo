@@ -4,19 +4,15 @@
     <string name="app_name">ShareGyazo</string>
     <string name="title_activity_share_gyazo">ShareGyazo</string>
     <string name="toast_copy_url">Image URL copied into Clipboard.</string>
-    <string name="dialog_message_done">Upload completed.</string>
     <string name="dialog_message_uploading">Upload in progress&#8230;</string>
     <string name="title_activity_preference">ShareGyazo Settings</string>
     <string name="failed_to_upload">Failed to upload.</string>
+    <string name="failed_to_upload_detail">Check network setting or exclude ShareGyazo from Battery Optimization.</string>
     <string name="message_uploaded">Image uploaded</string>
 
     <string name="ok">OK</string>
     <string name="cancel">Cancel</string>
-
-    <string name="dialog_gyazo_uploader">URL of Gyazo uploader</string>
-    <string name="message_gyazo_uploader">Gyazo uploader CGI URL</string>
-    <string name="dialog_gyazo_id">ID for Gyazo uploader</string>
-    <string name="message_gyazo_id">Keep empty if you don\'t know.</string>
+    <string name="none">None</string>
 
     <string name="category_behavior_url">Auto action after uploading</string>
     <string name="copy_gyazo_url_title">Copy image URL</string>
@@ -27,10 +23,7 @@
 
     <string name="notifications">Notifications</string>
     <string name="notification_action">Action for notification</string>
-    <string name="notification_action_message">Choose action when tap notification item.</string>
-    <string name="notification_enable_toast_title">Enable toast</string>
 
-    <string name="none">None</string>
     <string name="open_url">Open image URL</string>
     <string name="share_url">Share image URL</string>
     <string name="copy_url">Copy image URL</string>
@@ -44,10 +37,8 @@
     <string name="pref_auto_close_notification_title">Auto delete notification</string>
     <string name="pref_auto_close_notification_summary">Delete notification item with tap action.</string>
 
-    <string name="image_format">Image Format</string>
-    <string name="image_file_format">File Format</string>
+    <string name="image_format">Image format</string>
     <string name="image_quality">JPEG Quality</string>
-    <string name="image_quality_value">JPEG Quality Value (0&#8211;100)</string>
 
     <string name="convert_image">Converting image&#8211;</string>
 
@@ -55,4 +46,54 @@
 
     <string name="share_app_summary">Copyright &#169; 2016 Tomonori Tamagawa.\nTap here to share this app with your friends.</string>
     <string name="share_app_text">ShareGyazo the handy gyazo uploader app, get it from Play Store! https://play.google.com/store/apps/details?id=xtuaok.sharegyazo</string>
+
+    <!-- Profile -->
+
+    <string name="category_profiles">Profiles</string>
+    <string name="server_profiles">Server profiles</string>
+    <string name="default_profile">Default profile</string>
+
+    <!-- TODO: Remove or change this placeholder text -->
+    <string name="profile_name_title">Profile name</string>
+    <string name="profile_server_settings">Server settings</string>
+    <string name="profile_image_settings">Image settings</string>
+    <string name="profile_setting_title">New profile</string>>
+    <string name="profile_list_title">Profiles</string>>
+    <string name="profile_menu_delete_title">Remove</string>
+    <string name="profile_menu_save_title">Save</string>
+
+    <!-- Dialog UI -->
+    <string name="rename_dialog_title">Rename</string>
+    <string name="rename_dialog_message">Enter a new name</string>
+    <string name="rename_dialog_hint">Enter profile name</string>
+
+    <string name="cgi_url_dialog_title">Gyazo CGI URL</string>
+    <string name="cgi_url_dialog_message">Enter a Gyazo CGI URL</string>
+    <string name="cgi_url_dialog_hint">http://gyazo.com/upload.cgi</string>
+
+    <string name="gyazo_id_dialog_title">Gyazo ID</string>
+    <string name="gyazo_id_dialog_message">Enter a GyazoID</string>
+    <string name="gyazo_id_dialog_hint">leave empty if don\'t known</string>
+
+    <string name="image_format_dialog_title">Image Format</string>
+
+    <string name="image_quality_dialog_title">JPEG image quality</string>
+    <string name="image_quality_dialog_message">JPEG Quality Value: %d</string>
+
+    <string name="remove_profile_title">Remove profile</string>
+    <string name="remove_confirm_message">Are you sure to remove %s?</string>
+    <string name="toast_save_profile">Profile has been saved</string>
+    <string name="toast_remove_profile">Profile has been removed</string>
+    <string name="cannot_remove_profile">Cannot remove the last profile.</string>
+
+    <!-- profile chooser -->
+    <string name="select_profile">Select profile</string>
+    <string name="select_just_once">Just once</string>
+    <string name="select_always">Always</string>
+
+    <!-- -->
+    <string name="requires_permission_message">ShareGyazo requires permission to access storage.</string>
+    <string name="update_permission">Update permission</string>
+    <string name="please_grant_storage_permission">Please grant the storage permission</string>
+
 </resources>
