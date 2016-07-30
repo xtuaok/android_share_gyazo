@@ -23,7 +23,6 @@
             android:name=".ShareGyazo"
             android:label="@string/title_activity_share_gyazo"
             android:launchMode="singleInstance"
-            android:noHistory="true"
             android:excludeFromRecents="true"
             android:theme="@style/Translucent">
             <intent-filter>
