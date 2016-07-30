@@ -86,7 +86,6 @@ public class ShareGyazo extends FragmentActivity {
                 PackageManager.PERMISSION_GRANTED)
             return true;
         if (ActivityCompat.shouldShowRequestPermissionRationale(this, Manifest.permission.READ_EXTERNAL_STORAGE)) {
-            Log.d(LOG_TAG, "should show request permission rationale");
             final AlertDialog dialog = new AlertDialog.Builder(this)
                     .setView(R.layout.permission_alert_dialog)
                     .setPositiveButton(R.string.update_permission, new DialogInterface.OnClickListener() {
@@ -105,7 +104,6 @@ public class ShareGyazo extends FragmentActivity {
             });
             dialog.show();
         } else {
-            Log.d(LOG_TAG, "should show request permission rationale : false");
             ActivityCompat.requestPermissions(ShareGyazo.this, new String[]{Manifest.permission.READ_EXTERNAL_STORAGE}, REQUEST_EXTERNAL_STORAGE);
         }
         return false;
@@ -113,7 +111,6 @@ public class ShareGyazo extends FragmentActivity {
 
     @Override
     public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
-        Log.d(LOG_TAG, "onRequestPermissionsResult");
         switch (requestCode) {
             case REQUEST_EXTERNAL_STORAGE: {
                 if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
