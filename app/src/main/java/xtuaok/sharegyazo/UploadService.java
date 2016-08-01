@@ -461,7 +461,7 @@ public class UploadService extends IntentService {
         }
 
         Log.d(LOG_TAG, "Write a cache file");
-        if (mFormat == "png") { // PNG
+        if (mFormat.equals("png")) { // PNG
             temp = File.createTempFile("temp", "png", getCacheDir());
             os = new BufferedOutputStream(new FileOutputStream(temp));
             bitmap.compress(CompressFormat.PNG, mQuality, os);
