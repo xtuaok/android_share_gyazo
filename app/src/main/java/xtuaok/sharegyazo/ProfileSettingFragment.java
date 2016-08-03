@@ -290,6 +290,11 @@ public class ProfileSettingFragment extends GyazoSettingFragment
                     public void onClick(DialogInterface dialog, int which) {
                         String value = entry.getText().toString();
                         mProfile.setName(value);
+                        if (value.equalsIgnoreCase("imgur")) {
+                            mProfile.setURL("https://api.imgur.com/");
+                        } else if (value.equalsIgnoreCase("gyazo")) {
+                            mProfile.setURL("http://gyazo.com/upload.cgi");
+                        }
                         mAdapter.notifyDataSetChanged();
                     }
                 })

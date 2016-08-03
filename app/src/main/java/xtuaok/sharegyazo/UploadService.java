@@ -16,6 +16,7 @@
 package xtuaok.sharegyazo;
 
 import java.io.BufferedOutputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -36,6 +37,7 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Bitmap.CompressFormat;
 import android.support.v7.app.NotificationCompat;
+import android.util.Base64;
 import android.util.Log;
 import android.widget.Toast;
 
@@ -44,14 +46,24 @@ import android.content.Intent;
 import android.net.Uri;
 import android.os.Handler;
 
+import com.google.gson.JsonObject;
 import com.squareup.okhttp.MultipartBuilder;
 import com.squareup.okhttp.OkHttpClient;
 import com.squareup.okhttp.Request;
 import com.squareup.okhttp.RequestBody;
 import com.squareup.okhttp.Response;
 
+import org.json.JSONException;
+import org.json.JSONObject;
+
 public class UploadService extends IntentService {
     private static final String LOG_TAG = "GyazoUploadService";
+
+    private static final String IMGUR_CLIENT_ID = "de242da82e84888";
+    // private static final String IMGUR_CLIENT_SECRET = "8b4817cbf69490a7e0aad35a693bcdb0324a1e1f";
+
+    private static final String IMGUR_API = "https://api.imgur.com/";
+    private static final String IMGUR_API_ENDPOINT = "https://api.imgur.com/3/upload.json";
 
     private static final int NOTIFY_ONGOING   = 0x0;
     private static final int NOTIFY_UPLOADING = 0x1;
@@ -66,7 +78,6 @@ public class UploadService extends IntentService {
     private boolean mCopyURL;
     private boolean mOpenURL;
     private boolean mShareURL;
-    private String mFormat;
     private int mQuality;
     private int mNotifyAction;
     private boolean mNotifyClose;
@@ -75,8 +86,12 @@ public class UploadService extends IntentService {
     private NotificationManager mNotificationManager;
     private String mErrorMessage = "";
     private static final int MAX_IMAGE_PIXEL = 1920; // HD
+    private Bitmap.CompressFormat mFormat;
+    private Bitmap mNotifyImage;
+    
 
     private boolean mIsRetry = false;
+    private boolean mIsImgUr = false;
 
     public UploadService(String name) {
         super(name);
@@ -123,7 +138,6 @@ public class UploadService extends IntentService {
         mGyazoID  = mProfile.getGyazoID();
         mCopyURL  = prefs.getBoolean(GyazoPreference.PREF_COPY_URL, true);
         mOpenURL  = prefs.getBoolean(GyazoPreference.PREF_OPEN_BROWSER, false);
-        mFormat = mProfile.getFormat();
         mQuality = mProfile.getImageQuality();
         mShareURL = prefs.getBoolean(GyazoPreference.PREF_SHARE_TEXT, true);
         mNotifyAction = Integer.parseInt(prefs.getString(GyazoPreference.PREF_NOTIFY_ACTION, "0"));
@@ -131,6 +145,15 @@ public class UploadService extends IntentService {
         mNotification = prefs.getBoolean(GyazoPreference.PREF_SHOW_NOTIFICATION, true);
 
         mNotificationManager = (NotificationManager)getSystemService(Context.NOTIFICATION_SERVICE);
+        if (mGyazoCGI.startsWith(IMGUR_API)) {
+            mIsImgUr = true;
+            mGyazoCGI = IMGUR_API_ENDPOINT;
+        }
+        if (mProfile.getFormat().equals("png")) {
+            mFormat = CompressFormat.PNG;
+        } else {
+            mFormat = CompressFormat.JPEG;
+        }
 
         // Notify UPLOADING
         Intent notifIntent = new Intent();
@@ -166,13 +189,27 @@ public class UploadService extends IntentService {
         stopForeground(true);
     }
 
+    private Bitmap createNotifyImage(File file) {
+        Bitmap bitmap;
+        BitmapFactory.Options opts = new BitmapFactory.Options();
+        opts.inJustDecodeBounds = true;
+        BitmapFactory.decodeFile(file.getPath(), opts);
+        int size = Math.max(opts.outHeight, opts.outHeight);
+        opts.inSampleSize = 1;
+        while (size / opts.inSampleSize > MAX_IMAGE_PIXEL) {
+            opts.inSampleSize = opts.inSampleSize * 2;
+        }
+        opts.inJustDecodeBounds = false;
+        bitmap = BitmapFactory.decodeFile(file.getPath(), opts);
+        return bitmap;
+    }
+
     /**
      *  Notify result to user
      *
      * @param result  HTTP result string.
      */
     private void notify(String result) {
-        Bitmap bitmap = null;
         Intent intent = new Intent();
         PendingIntent intentView = null;
         PendingIntent intentSend = null;
@@ -191,17 +228,20 @@ public class UploadService extends IntentService {
          * Get the bitmap for notification image.
          */
         if (mCacheFile != null && mCacheFile.exists()) {
-            BitmapFactory.Options opts = new BitmapFactory.Options();
-            opts.inJustDecodeBounds = true;
-            BitmapFactory.decodeFile(mCacheFile.getPath(), opts);
-            int size = Math.max(opts.outHeight, opts.outHeight);
-            opts.inSampleSize = 1;
-            while (size / opts.inSampleSize > MAX_IMAGE_PIXEL) {
-                opts.inSampleSize = opts.inSampleSize * 2;
-            }
-            opts.inJustDecodeBounds = false;
-            bitmap = BitmapFactory.decodeFile(mCacheFile.getPath(), opts);
             mCacheFile.delete();
+        }
+
+        if (mIsImgUr) {
+            // imgur
+            Log.d(LOG_TAG, "response: " + result);
+            try {
+                JSONObject json = new JSONObject(result);
+                result = json.getJSONObject("data").getString("link");
+            } catch (JSONException ex) {
+                Log.d(LOG_TAG, "JSONException: " + ex.getMessage());
+                mErrorMessage = "Error: " + ex.getMessage();
+                result = ex.getMessage();
+            }
         }
 
         if (result == null || result.isEmpty() || !result.startsWith("http")) {
@@ -221,8 +261,8 @@ public class UploadService extends IntentService {
                     .setAutoCancel(true)
                     .setAutoCancel(mNotifyClose);
 
-            if (bitmap != null) {
-                builder.setLargeIcon(bitmap);
+            if (mNotifyImage != null) {
+                builder.setLargeIcon(mNotifyImage);
             }
 
             if (mNotification) {
@@ -234,8 +274,8 @@ public class UploadService extends IntentService {
                     Toast.makeText(mContext, getString(R.string.failed_to_upload), Toast.LENGTH_LONG).show();
                 }
             });
-            if (bitmap != null && !bitmap.isRecycled())
-                bitmap.recycle();
+            if (mNotifyImage != null && !mNotifyImage.isRecycled())
+                mNotifyImage.recycle();
             return;
         } /* failed */
 
@@ -244,7 +284,7 @@ public class UploadService extends IntentService {
          */
         if (mGyazoCGI.contains("://gyazo.com/") &&
                 result.startsWith("https://gyazo.com/")) {
-            String ext = "." + mFormat;
+            String ext = "." + mProfile.getFormat();
             String hash = result.substring(18, result.length()).replaceAll("[\n\r]", "");
             result = "https://i.gyazo.com/" + hash + ext;
         }
@@ -313,7 +353,7 @@ public class UploadService extends IntentService {
                 .setContentText(getString(R.string.message_uploaded))
                 .setTicker(result)
                 .setSmallIcon(R.drawable.ic_cloud_done_24dp)
-                .setLargeIcon(bitmap)
+                .setLargeIcon(mNotifyImage)
                 .setAutoCancel(mNotifyClose);
 
         NotificationCompat.Action action =
@@ -337,15 +377,15 @@ public class UploadService extends IntentService {
         }
 
         builder.setStyle(new NotificationCompat.BigPictureStyle()
-                .bigPicture(bitmap)
+                .bigPicture(mNotifyImage)
                 .bigLargeIcon(BitmapFactory.decodeResource(getResources(), R.drawable.ic_launcher))
                 .setBigContentTitle(getString(R.string.message_uploaded))
                 .setSummaryText(result));
         mNotificationManager.cancel(NOTIFY_UPLOADING);
         mNotificationManager.notify(result, NOTIFY_DONE, builder.build());
 
-        if (bitmap != null && ! bitmap.isRecycled())
-            bitmap.recycle();
+        if (mNotifyImage != null && ! mNotifyImage.isRecycled())
+            mNotifyImage.recycle();
     }
 
     /**
@@ -416,7 +456,8 @@ public class UploadService extends IntentService {
      */
     private File convertImageFile(File file) throws IOException
     {
-        BufferedOutputStream os;
+        ByteArrayOutputStream baos;
+        BufferedOutputStream bos;
         File temp = null;
         BitmapFactory.Options options = new BitmapFactory.Options();
         Matrix matrix = new Matrix();
@@ -461,18 +502,13 @@ public class UploadService extends IntentService {
         }
 
         Log.d(LOG_TAG, "Write a cache file");
-        if (mFormat.equals("png")) { // PNG
-            temp = File.createTempFile("temp", "png", getCacheDir());
-            os = new BufferedOutputStream(new FileOutputStream(temp));
-            bitmap.compress(CompressFormat.PNG, mQuality, os);
-        } else { // JPEG
-            temp = File.createTempFile("temp", "jpg", getCacheDir());
-            os = new BufferedOutputStream(new FileOutputStream(temp));
-            bitmap.compress(CompressFormat.JPEG, mQuality, os);
-        }
-        os.flush();
-        os.close();
-        bitmap.recycle();
+        temp = File.createTempFile("temp", "tmp", getCacheDir());
+        bos = new BufferedOutputStream(new FileOutputStream(temp));
+        bitmap.compress(mFormat, mQuality, bos);
+        bos.flush();
+        bos.close();
+
+        mNotifyImage = bitmap;
 
         return temp;
     }
@@ -516,6 +552,7 @@ public class UploadService extends IntentService {
      */
     private String postGyazo(String cgi, File file) throws IOException {
         String result = "";
+        Request request;
         OkHttpClient client = new OkHttpClient();
         final long totalSize = file.length();
 
@@ -523,9 +560,33 @@ public class UploadService extends IntentService {
         client.setReadTimeout(15, TimeUnit.SECONDS);
         client.setWriteTimeout(15, TimeUnit.SECONDS);
 
-        Log.d(LOG_TAG, "Create request body: GyazoID: " + mGyazoID);
-        setProgress(0);
-        RequestBody requestBody = new MultipartBuilder()
+        if (mIsImgUr) {
+            Log.d(LOG_TAG, "Create request body: IMGUR ClientID: " + IMGUR_CLIENT_ID);
+            setProgress(0);
+            RequestBody requestBody = new MultipartBuilder()
+                    .type(MultipartBuilder.FORM)
+                    .addFormDataPart("image", file.getName(),
+                            new CountingFileRequestBody(file, "image/*", new CountingFileRequestBody.ProgressListener() {
+                                private int previous = 0;
+
+                                @Override
+                                public void transferred(long num) {
+                                    float progress = (num / (float) totalSize) * 100;
+                                    if ((int) progress <= previous) return;
+                                    previous = (int)progress;
+                                    setProgress(previous);
+                                }
+                            }))
+                    .build();
+            request = new Request.Builder()
+                    .addHeader("Authorization", "Client-ID " + IMGUR_CLIENT_ID)
+                    .url(cgi)
+                    .post(requestBody)
+                    .build();
+        } else {
+            Log.d(LOG_TAG, "Create request body: GyazoID: " + mGyazoID);
+            setProgress(0);
+            RequestBody requestBody = new MultipartBuilder()
                 .type(MultipartBuilder.FORM)
                 .addFormDataPart("id", mGyazoID)
                 .addFormDataPart("imagedata", file.getName(),
@@ -541,10 +602,11 @@ public class UploadService extends IntentService {
                             }
                         }))
                 .build();
-        Request request = new Request.Builder()
+            request = new Request.Builder()
                 .url(cgi)
                 .post(requestBody)
                 .build();
+        }
         try {
             Log.d(LOG_TAG, "Post execute");
             Response response = client.newCall(request).execute();
@@ -557,6 +619,7 @@ public class UploadService extends IntentService {
                 pm.storeProfiles();
             }
             result = response.body().string();
+            Log.d(LOG_TAG, "HTTP Response: " + response.code());
             Log.d(LOG_TAG, "Response Body: " + result);
         } catch (IOException e) {
             Log.e(LOG_TAG, "HTTP Error", e);
