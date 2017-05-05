@@ -13,7 +13,7 @@ import java.util.HashMap;
 public class ProfileManager {
     private static final String LOG_TAG = "ProfileManager";
 
-    private static final String PRESET_URL = "http://gyazo.com/upload.cgi";
+    private static final String PRESET_URL = "https://upload.gyazo.com/upload.cgi";
     private static final String PRESET_NAME = "Gyazo";
 
     private static final String PREF_PROFILES = "profile_list";

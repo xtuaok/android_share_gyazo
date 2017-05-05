@@ -69,7 +69,7 @@
 
     <string name="cgi_url_dialog_title">Gyazo CGI URL</string>
     <string name="cgi_url_dialog_message">Enter a Gyazo CGI URL</string>
-    <string name="cgi_url_dialog_hint">http://gyazo.com/upload.cgi</string>
+    <string name="cgi_url_dialog_hint">https://upload.gyazo.com/upload.cgi</string>
 
     <string name="gyazo_id_dialog_title">Gyazo ID</string>
     <string name="gyazo_id_dialog_message">Enter a GyazoID</string>
