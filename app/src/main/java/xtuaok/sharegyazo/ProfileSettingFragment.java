@@ -293,7 +293,7 @@ public class ProfileSettingFragment extends GyazoSettingFragment
                         if (value.equalsIgnoreCase("imgur")) {
                             mProfile.setURL("https://api.imgur.com/");
                         } else if (value.equalsIgnoreCase("gyazo")) {
-                            mProfile.setURL("http://gyazo.com/upload.cgi");
+                            mProfile.setURL("http://upload.gyazo.com/upload.cgi");
                         }
                         mAdapter.notifyDataSetChanged();
                     }
