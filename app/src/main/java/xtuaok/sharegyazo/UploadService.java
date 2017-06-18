@@ -282,7 +282,7 @@ public class UploadService extends IntentService {
         /*
          * convert Image URL for gyazo.com
          */
-        if (mGyazoCGI.contains("://gyazo.com/") &&
+        if (mGyazoCGI.contains("://upload.gyazo.com/") &&
                 result.startsWith("https://gyazo.com/")) {
             String ext = "." + mProfile.getFormat();
             String hash = result.substring(18, result.length()).replaceAll("[\n\r]", "");
