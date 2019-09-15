@@ -1,13 +1,13 @@
 apply plugin: 'com.android.application'
 android {
-    compileSdkVersion 23
-    buildToolsVersion "23.0.3"
+    compileSdkVersion 28
+    buildToolsVersion '28.0.3'
     defaultConfig {
         applicationId "xtuaok.sharegyazo"
         minSdkVersion 21
-        targetSdkVersion 23
-        versionCode 24
-        versionName '2.4'
+        targetSdkVersion 28
+        versionCode 28
+        versionName '2.8'
     }
     buildTypes {
         release {
@@ -22,12 +22,16 @@ android {
             assets.srcDirs = ["src/main/assets"]
         }
     }
+    compileOptions {
+        sourceCompatibility = 1.8
+        targetCompatibility = 1.8
+    }
 }
 
 dependencies {
-    compile 'com.google.code.gson:gson:2.7'
-    compile 'com.squareup.okhttp:okhttp:2.7.1'
-    compile 'com.android.support:support-v4:23.4.0'
-    compile 'com.android.support:appcompat-v7:23.4.0'
-    compile 'com.android.support:design:23.4.0'
+    implementation 'com.google.code.gson:gson:2.8.5'
+    implementation 'com.squareup.okhttp:okhttp:2.7.5'
+    implementation 'androidx.legacy:legacy-support-v4:1.0.0'
+    implementation 'androidx.appcompat:appcompat:1.0.0'
+    implementation 'com.google.android.material:material:1.0.0'
 }

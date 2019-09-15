@@ -22,11 +22,14 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 
+import android.graphics.Color;
+import android.os.Build;
 import android.os.Debug;
 import android.graphics.Matrix;
 import android.media.ExifInterface;
 import android.preference.PreferenceManager;
 import android.app.Notification;
+import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.content.ClipData;
@@ -36,8 +39,9 @@ import android.content.SharedPreferences;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Bitmap.CompressFormat;
-import android.support.v7.app.NotificationCompat;
-import android.util.Base64;
+import androidx.core.app.NotificationCompat;
+
+
 import android.util.Log;
 import android.widget.Toast;
 
@@ -46,7 +50,6 @@ import android.content.Intent;
 import android.net.Uri;
 import android.os.Handler;
 
-import com.google.gson.JsonObject;
 import com.squareup.okhttp.MultipartBuilder;
 import com.squareup.okhttp.OkHttpClient;
 import com.squareup.okhttp.Request;
@@ -68,7 +71,10 @@ public class UploadService extends IntentService {
     private static final int NOTIFY_ONGOING   = 0x0;
     private static final int NOTIFY_UPLOADING = 0x1;
     private static final int NOTIFY_DONE      = 0x2;
-    
+    private static final String NOTIFICATION_UPLOADING_CHANNEL = "NOTIFY_UPLOADING_CHANNEL";
+    private static final String NOTIFICATION_UPLOADED_CHANNEL = "NOTIFY_UPLOADED_CHANNEL";
+
+
     private Handler mHandler;
     private Context mContext;
     private File mCacheFile;
@@ -82,7 +88,7 @@ public class UploadService extends IntentService {
     private int mNotifyAction;
     private boolean mNotifyClose;
     private boolean mNotification;
-    private Notification.Builder mUploadNotify;
+    private NotificationCompat.Builder mUploadNotify;
     private NotificationManager mNotificationManager;
     private String mErrorMessage = "";
     private static final int MAX_IMAGE_PIXEL = 1920; // HD
@@ -154,16 +160,37 @@ public class UploadService extends IntentService {
         } else {
             mFormat = CompressFormat.JPEG;
         }
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            NotificationChannel notificationChannel = new NotificationChannel(NOTIFICATION_UPLOADING_CHANNEL, getString(R.string.notification_name_uploading), NotificationManager.IMPORTANCE_DEFAULT);
+
+            // Configure the notification channel.
+            notificationChannel.setDescription(getString(R.string.notification_desc_uploading));
+            //notificationChannel.enableLights(true);
+            //notificationChannel.setLightColor(Color.RED);
+            //notificationChannel.setVibrationPattern(new long[]{0, 1000, 500, 1000});
+            //notificationChannel.enableVibration(true);
+            mNotificationManager.createNotificationChannel(notificationChannel);
+
+            notificationChannel = new NotificationChannel(NOTIFICATION_UPLOADED_CHANNEL, getString(R.string.notification_name_uploaded), NotificationManager.IMPORTANCE_DEFAULT);
+
+            // Configure the notification channel.
+            notificationChannel.setDescription(getString(R.string.notification_desc_uploaded));
+            //notificationChannel.enableLights(true);
+            //notificationChannel.setLightColor(Color.RED);
+            //notificationChannel.setVibrationPattern(new long[]{0, 1000, 500, 1000});
+            //notificationChannel.enableVibration(true);
+            mNotificationManager.createNotificationChannel(notificationChannel);
+
+        }
 
         // Notify UPLOADING
         Intent notifIntent = new Intent();
         PendingIntent pendingIntent = PendingIntent.getActivity(this, 0, notifIntent, PendingIntent.FLAG_UPDATE_CURRENT);
 
-        mUploadNotify = new Notification.Builder(this);
+        mUploadNotify = new NotificationCompat.Builder(this, NOTIFICATION_UPLOADING_CHANNEL);
         mUploadNotify.setContentTitle(getString(R.string.app_name))
                 .setProgress(0, 0, true)
                 .setContentText(getString(R.string.convert_image))
-                .setPriority(Notification.PRIORITY_DEFAULT)
                 .setSmallIcon(android.R.drawable.stat_sys_upload)
                 .setTicker(getString(R.string.dialog_message_uploading))
                 .setContentIntent(pendingIntent)
@@ -347,8 +374,9 @@ public class UploadService extends IntentService {
         actionIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
         intentCopy = PendingIntent.getActivity(mContext, 0, actionIntent, PendingIntent.FLAG_UPDATE_CURRENT);
 
+
         // build
-        NotificationCompat.Builder builder = new NotificationCompat.Builder(this);
+        NotificationCompat.Builder builder = new NotificationCompat.Builder(this, NOTIFICATION_UPLOADED_CHANNEL);
         builder.setContentTitle(getString(R.string.app_name))
                 .setContentText(getString(R.string.message_uploaded))
                 .setTicker(result)

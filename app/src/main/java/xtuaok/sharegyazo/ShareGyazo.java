@@ -28,9 +28,9 @@ import android.os.Build;
 import android.os.Bundle;
 import android.content.Intent;
 import android.provider.Settings;
-import android.support.v4.app.ActivityCompat;
-import android.support.v4.app.FragmentActivity;
-import android.support.v4.content.ContextCompat;
+import androidx.core.app.ActivityCompat;
+import androidx.fragment.app.FragmentActivity;
+import androidx.core.content.ContextCompat;
 import android.util.Log;
 import android.widget.Toast;
 

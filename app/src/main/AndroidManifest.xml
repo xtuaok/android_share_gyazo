@@ -3,9 +3,7 @@
     package="xtuaok.sharegyazo"
     android:installLocation="auto">
 
-    <uses-sdk
-        android:minSdkVersion="21"
-        android:targetSdkVersion="23" />
+    <uses-sdk android:targetSdkVersion="23" />
 
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
@@ -15,9 +13,6 @@
         android:icon="@drawable/ic_launcher"
         android:label="@string/app_name"
         android:largeHeap="true">
-
-        <android:uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
-        <android:uses-permission android:name="android.permission.READ_PHONE_STATE" />
 
         <activity
             android:name=".ShareGyazo"
