@@ -71,8 +71,7 @@ public class UploadService extends IntentService {
     private static final int NOTIFY_ONGOING   = 0x0;
     private static final int NOTIFY_UPLOADING = 0x1;
     private static final int NOTIFY_DONE      = 0x2;
-    private static final String NOTIFICATION_UPLOADING_CHANNEL = "NOTIFY_UPLOADING_CHANNEL";
-    private static final String NOTIFICATION_UPLOADED_CHANNEL = "NOTIFY_UPLOADED_CHANNEL";
+    private static final String NOTIFICATION_CHANNEL_ALL = "N_CH_ALL";
 
 
     private Handler mHandler;
@@ -160,21 +159,11 @@ public class UploadService extends IntentService {
         } else {
             mFormat = CompressFormat.JPEG;
         }
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            NotificationChannel notificationChannel = new NotificationChannel(NOTIFICATION_UPLOADING_CHANNEL, getString(R.string.notification_name_uploading), NotificationManager.IMPORTANCE_DEFAULT);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && mNotificationManager.getNotificationChannel(NOTIFICATION_CHANNEL_ALL) == null) {
+            NotificationChannel notificationChannel = new NotificationChannel(NOTIFICATION_CHANNEL_ALL, getString(R.string.notification_name_all), NotificationManager.IMPORTANCE_DEFAULT);
 
             // Configure the notification channel.
-            notificationChannel.setDescription(getString(R.string.notification_desc_uploading));
-            //notificationChannel.enableLights(true);
-            //notificationChannel.setLightColor(Color.RED);
-            //notificationChannel.setVibrationPattern(new long[]{0, 1000, 500, 1000});
-            //notificationChannel.enableVibration(true);
-            mNotificationManager.createNotificationChannel(notificationChannel);
-
-            notificationChannel = new NotificationChannel(NOTIFICATION_UPLOADED_CHANNEL, getString(R.string.notification_name_uploaded), NotificationManager.IMPORTANCE_DEFAULT);
-
-            // Configure the notification channel.
-            notificationChannel.setDescription(getString(R.string.notification_desc_uploaded));
+            // notificationChannel.setDescription(getString(R.string.notification_desc_all));
             //notificationChannel.enableLights(true);
             //notificationChannel.setLightColor(Color.RED);
             //notificationChannel.setVibrationPattern(new long[]{0, 1000, 500, 1000});
@@ -187,7 +176,7 @@ public class UploadService extends IntentService {
         Intent notifIntent = new Intent();
         PendingIntent pendingIntent = PendingIntent.getActivity(this, 0, notifIntent, PendingIntent.FLAG_UPDATE_CURRENT);
 
-        mUploadNotify = new NotificationCompat.Builder(this, NOTIFICATION_UPLOADING_CHANNEL);
+        mUploadNotify = new NotificationCompat.Builder(this, NOTIFICATION_CHANNEL_ALL);
         mUploadNotify.setContentTitle(getString(R.string.app_name))
                 .setProgress(0, 0, true)
                 .setContentText(getString(R.string.convert_image))
@@ -376,7 +365,7 @@ public class UploadService extends IntentService {
 
 
         // build
-        NotificationCompat.Builder builder = new NotificationCompat.Builder(this, NOTIFICATION_UPLOADED_CHANNEL);
+        NotificationCompat.Builder builder = new NotificationCompat.Builder(this, NOTIFICATION_CHANNEL_ALL);
         builder.setContentTitle(getString(R.string.app_name))
                 .setContentText(getString(R.string.message_uploaded))
                 .setTicker(result)

@@ -97,9 +97,5 @@
     <string name="update_permission">権限を更新</string>
     <string name="please_grant_storage_permission">ストレージのアクセス権限を許可してください</string>
 
-    <string name="notification_name_uploading">アップロード中</string>
-    <string name="notification_desc_uploading">アップロード中の進捗の通知</string>
-    <string name="notification_name_uploaded">アップロード後</string>
-    <string name="notification_desc_uploaded">アップロード後の結果の通知で、プレビューやアクションボタンが含まれます</string>
-
+    <string name="notification_name_all">すべて</string>
 </resources>

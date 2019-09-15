@@ -96,8 +96,5 @@
     <string name="update_permission">Update permission</string>
     <string name="please_grant_storage_permission">Please grant the storage permission</string>
 
-    <string name="notification_name_uploading">Uploading progress notification</string>
-    <string name="notification_desc_uploading">Notifications for uploading progress</string>
-    <string name="notification_name_uploaded">Upload result notification</string>
-    <string name="notification_desc_uploaded">Notifications for upload result which contain preview and action buttons.</string>
+    <string name="notification_name_all">All notifications</string>
 </resources>

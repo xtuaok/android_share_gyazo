@@ -6,8 +6,8 @@ android {
         applicationId "xtuaok.sharegyazo"
         minSdkVersion 21
         targetSdkVersion 28
-        versionCode 28
-        versionName '2.8'
+        versionCode 29
+        versionName '2.9'
     }
     buildTypes {
         release {
