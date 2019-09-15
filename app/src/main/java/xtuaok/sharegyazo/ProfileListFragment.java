@@ -87,7 +87,7 @@ public class ProfileListFragment extends Fragment
             public void onClick(View view) {
                 final View v = view;
                 Bundle bundle = new Bundle();
-                Profile profile = new Profile("gyazo", "http://upload.gyazo.com/upload.cgi");
+                Profile profile = new Profile("gyazo", "https://upload.gyazo.com/upload.cgi");
                 bundle.putParcelable(Profile.EXTRA_PROFILE, profile);
                 bundle.putBoolean(Profile.EXTRA_NEW_PROFILE, true);
                 ProfileSettingFragment fragment = new ProfileSettingFragment();
