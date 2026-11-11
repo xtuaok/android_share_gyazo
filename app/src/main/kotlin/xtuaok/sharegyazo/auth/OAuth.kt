@@ -2,6 +2,7 @@ package xtuaok.sharegyazo.auth
 
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
@@ -159,17 +160,19 @@ class OAuthClient(
             .build()
         client.newCall(request).execute().use { response ->
             val body = response.body.string()
-            val obj = runCatching { Json.parseToJsonElement(body).jsonObject }.getOrNull()
-            val token = obj?.get("access_token")?.jsonPrimitive?.content
+            // Parse leniently: an unexpected shape must end up as an IOException, not a crash.
+            val obj = runCatching { Json.parseToJsonElement(body) as? JsonObject }.getOrNull()
+            fun field(name: String) = (obj?.get(name) as? JsonPrimitive)?.takeIf { it.isString }?.content
+            val token = field("access_token")
             if (!response.isSuccessful || token.isNullOrBlank()) {
-                val error = obj?.get("error")?.jsonPrimitive?.content ?: "HTTP ${response.code}"
+                val error = field("error") ?: "HTTP ${response.code}"
                 if (response.code == 400) throw OAuthRejectedException(error)
                 throw IOException("Token request failed: $error")
             }
-            val expiresIn = obj["expires_in"]?.jsonPrimitive?.longOrNull
+            val expiresIn = (obj?.get("expires_in") as? JsonPrimitive)?.longOrNull
             return OAuthTokens(
                 accessToken = token,
-                refreshToken = obj["refresh_token"]?.jsonPrimitive?.content.orEmpty(),
+                refreshToken = field("refresh_token").orEmpty(),
                 expiresAt = expiresIn?.let { now() + it * 1000 } ?: 0,
             )
         }

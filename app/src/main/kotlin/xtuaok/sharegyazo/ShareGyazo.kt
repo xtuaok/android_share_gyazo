@@ -48,13 +48,22 @@ import xtuaok.sharegyazo.upload.Notifications
 class ShareGyazo : ComponentActivity() {
     private val viewModel: ShareViewModel by viewModels()
 
+    private var askingPermission = false
+
     private val notificationPermission =
-        registerForActivityResult(ActivityResultContracts.RequestPermission()) { viewModel.begin(intent) }
+        registerForActivityResult(ActivityResultContracts.RequestPermission()) {
+            askingPermission = false
+            viewModel.begin(intent)
+        }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        if (savedInstanceState == null) {
-            if (shouldAskNotificationPermission()) {
+        askingPermission = savedInstanceState?.getBoolean(KEY_ASKING_PERMISSION) == true
+        // Also runs after process death; begin() ignores repeated calls. While the permission
+        // dialog is open, its result callback starts the flow instead.
+        if (!askingPermission) {
+            if (savedInstanceState == null && shouldAskNotificationPermission()) {
+                askingPermission = true
                 notificationPermission.launch(Manifest.permission.POST_NOTIFICATIONS)
             } else {
                 viewModel.begin(intent)
@@ -92,6 +101,11 @@ class ShareGyazo : ComponentActivity() {
         }
     }
 
+    override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+        outState.putBoolean(KEY_ASKING_PERMISSION, askingPermission)
+    }
+
     private fun shouldAskNotificationPermission(): Boolean =
         Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
             app.settings.settings.value.showNotification &&
@@ -105,6 +119,10 @@ class ShareGyazo : ComponentActivity() {
         } catch (_: ActivityNotFoundException) {
             // Nothing can handle it; the URL is still in the notification.
         }
+    }
+
+    private companion object {
+        const val KEY_ASKING_PERMISSION = "asking_permission"
     }
 }
 

@@ -133,6 +133,19 @@ class OAuthClientTest {
     }
 
     @Test
+    fun unexpectedJsonIsAnIOExceptionNotACrash() {
+        for (body in listOf("""{"access_token":{"x":1}}""", """[1,2]""", """{"error":{"code":1}}""", "not json")) {
+            server.enqueue(MockResponse.Builder().code(200).body(body).build())
+            try {
+                client.refresh(server.url("/refresh").toString(), "r1")
+                fail("expected IOException for $body")
+            } catch (e: IOException) {
+                // expected
+            }
+        }
+    }
+
+    @Test
     fun serverErrorIsRetryable() {
         server.enqueue(MockResponse.Builder().code(502).body("""{"error":"exchange_failed"}""").build())
         try {

@@ -83,28 +83,31 @@ object AccountLogin {
     /**
      * Returns [profile] with a usable access token, refreshing it through the relay when it
      * is about to expire. Blocking; call off the main thread.
+     *
+     * Synchronized and based on the stored tokens, not the caller's copy: when two uploads
+     * need a refresh at the same time, the second one reuses the first one's result instead
+     * of sending a refresh token the service may already have rotated.
      * @throws OAuthRejectedException when the refresh token is no longer valid (the stored
      *   tokens are cleared, so the user is asked to log in again).
      */
+    @Synchronized
     @Throws(IOException::class)
     fun ensureFresh(context: Context, profile: Profile, now: Long = System.currentTimeMillis()): Profile {
         val provider = OAuthProvider.of(profile.kind) ?: return profile
-        if (profile.tokenExpiresAt == 0L || now < profile.tokenExpiresAt - REFRESH_MARGIN_MS) return profile
-        if (profile.refreshToken.isBlank()) throw OAuthRejectedException("expired")
         val repo = context.app.profiles
-        return try {
-            val tokens = OAuthClient().refresh(provider.refreshUrl, profile.refreshToken)
-            val merged = tokens.copy(refreshToken = tokens.refreshToken.ifBlank { profile.refreshToken })
-            repo.setTokens(provider.kind, merged)
-            profile.copy(
-                bearerToken = merged.accessToken,
-                refreshToken = merged.refreshToken,
-                tokenExpiresAt = merged.expiresAt,
-            )
+        val current = repo.builtIn(provider.kind) ?: profile
+        if (current.tokenExpiresAt == 0L || now < current.tokenExpiresAt - REFRESH_MARGIN_MS) {
+            return profile.withCredentialsOf(current)
+        }
+        if (current.refreshToken.isBlank()) throw OAuthRejectedException("expired")
+        try {
+            val tokens = OAuthClient().refresh(provider.refreshUrl, current.refreshToken)
+            repo.setTokens(provider.kind, tokens.copy(refreshToken = tokens.refreshToken.ifBlank { current.refreshToken }))
         } catch (e: OAuthRejectedException) {
             repo.setTokens(provider.kind, null)
             throw e
         }
+        return profile.withCredentialsOf(repo.builtIn(provider.kind) ?: current)
     }
 
     private fun key(provider: OAuthProvider, name: String) = "${provider.id}_$name"
