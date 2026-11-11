@@ -1,13 +1,24 @@
-// Static site for https://xtuaok.sickin.dev/ShareGyazo/ (privacy policy),
-// served by Cloudflare Workers static assets.
+// https://xtuaok.sickin.dev/ShareGyazo/
+//   - static pages (privacy policy) from ./public
+//   - Gyazo / imgur login relay at /ShareGyazo/oauth/{gyazo,imgur}/* (src/worker.js)
 // Deploy: `npx wrangler deploy` in this directory, or the GitHub Actions workflow.
+// Client secrets are NOT in this file: set GYAZO_CLIENT_SECRET and IMGUR_CLIENT_SECRET as secrets
+// (Cloudflare dashboard > Workers > sharegyazo-site > Settings > Variables and Secrets).
 {
   "name": "sharegyazo-site",
+  "main": "src/worker.js",
   "compatibility_date": "2026-11-01",
   "assets": {
     "directory": "./public",
+    "binding": "ASSETS",
     "html_handling": "auto-trailing-slash",
-    "not_found_handling": "none"
+    "not_found_handling": "none",
+    "run_worker_first": ["/ShareGyazo/oauth/*"]
+  },
+  "vars": {
+    "GYAZO_CLIENT_ID": "7je9rgEwUkiejq97COPyFKr4jmZ0fGzALJPwGxtLvuE",
+    "GYAZO_REDIRECT_URI": "https://xtuaok.sickin.dev/ShareGyazo/oauth/gyazo/callback",
+    "IMGUR_CLIENT_ID": "de242da82e84888"
   },
   // Only /ShareGyazo* on the subdomain is handled here, so other paths on
   // xtuaok.sickin.dev can be served by something else.

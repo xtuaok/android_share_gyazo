@@ -1,6 +1,8 @@
 package xtuaok.sharegyazo.upload
 
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import okhttp3.MediaType
@@ -14,6 +16,9 @@ import okio.Buffer
 import okio.BufferedSink
 import okio.ForwardingSink
 import okio.buffer
+import xtuaok.sharegyazo.auth.OAuthProvider
+import xtuaok.sharegyazo.data.Profile
+import xtuaok.sharegyazo.data.ProfileKind
 import java.io.File
 import java.io.IOException
 import java.util.concurrent.TimeUnit
@@ -21,14 +26,28 @@ import kotlin.math.min
 import kotlin.math.roundToInt
 
 /** Where and how an image is posted. */
-data class UploadEndpoint(val url: String, val isImgur: Boolean) {
+data class UploadEndpoint(val url: String, val type: Type) {
+    enum class Type {
+        /** Gyazo-compatible upload.cgi: multipart `id` + `imagedata`, plain-text URL response. */
+        CGI,
+
+        /** gyazo.com official API: Bearer token, multipart `imagedata`, JSON response. */
+        GYAZO_API,
+
+        /** imgur API: Bearer (login) or Client-ID (anonymous), multipart `image`, JSON response. */
+        IMGUR,
+    }
+
     companion object {
-        const val IMGUR_API = "https://api.imgur.com/"
         const val IMGUR_UPLOAD = "https://api.imgur.com/3/upload.json"
 
-        fun forProfileUrl(url: String): UploadEndpoint =
-            if (url.startsWith(IMGUR_API)) UploadEndpoint(IMGUR_UPLOAD, isImgur = true)
-            else UploadEndpoint(url, isImgur = false)
+        fun forProfile(profile: Profile): UploadEndpoint = when (profile.kind) {
+            ProfileKind.GYAZO -> UploadEndpoint(Profile.GYAZO_API_URL, Type.GYAZO_API)
+            ProfileKind.IMGUR -> UploadEndpoint(Profile.IMGUR_API_URL, Type.IMGUR)
+            ProfileKind.CUSTOM ->
+                if (profile.isImgurAnonymous) UploadEndpoint(IMGUR_UPLOAD, Type.IMGUR)
+                else UploadEndpoint(profile.url, Type.CGI)
+        }
     }
 }
 
@@ -51,16 +70,16 @@ object UploadProtocol {
      * For gyazo.com, the page URL is converted to the direct image URL.
      */
     fun resolveImageUrl(endpoint: UploadEndpoint, body: String, format: String): String? {
-        val text = if (endpoint.isImgur) {
-            runCatching {
-                Json.parseToJsonElement(body).jsonObject["data"]!!.jsonObject["link"]!!.jsonPrimitive.content
-            }.getOrNull()
-        } else {
-            body
+        val text = when (endpoint.type) {
+            UploadEndpoint.Type.IMGUR -> jsonString(body) { it["data"]?.jsonObject?.get("link") }
+            UploadEndpoint.Type.GYAZO_API -> jsonString(body) { it["url"] ?: it["permalink_url"] }
+            UploadEndpoint.Type.CGI -> body
         }?.trim()
         if (text.isNullOrEmpty() || !text.startsWith("http")) return null
 
-        if (endpoint.url.contains("://upload.gyazo.com/") && text.startsWith(GYAZO_PAGE)) {
+        if (endpoint.type == UploadEndpoint.Type.CGI &&
+            endpoint.url.contains("://upload.gyazo.com/") && text.startsWith(GYAZO_PAGE)
+        ) {
             val hash = text.removePrefix(GYAZO_PAGE).replace(Regex("[\r\n]"), "")
             return "https://i.gyazo.com/$hash.$format"
         }
@@ -68,11 +87,15 @@ object UploadProtocol {
     }
 
     private const val GYAZO_PAGE = "https://gyazo.com/"
+
+    private fun jsonString(body: String, pick: (JsonObject) -> JsonElement?): String? = runCatching {
+        pick(Json.parseToJsonElement(body).jsonObject)?.jsonPrimitive?.content
+    }.getOrNull()
 }
 
 class Uploader(
     private val client: OkHttpClient = defaultClient,
-    private val imgurClientId: String = IMGUR_CLIENT_ID,
+    private val imgurClientId: String = OAuthProvider.IMGUR.clientId,
 ) {
     /**
      * Posts [file] synchronously.
@@ -84,18 +107,31 @@ class Uploader(
         file: File,
         mimeType: String,
         gyazoId: String,
+        bearerToken: String = "",
         onProgress: (Int) -> Unit = {},
     ): UploadResponse {
         val ext = if (mimeType == "image/png") "png" else "jpg"
         val imageBody = file.asRequestBody(mimeType.toMediaType())
         val builder = MultipartBody.Builder().setType(MultipartBody.FORM)
         val request = Request.Builder().url(endpoint.url)
-        if (endpoint.isImgur) {
-            builder.addFormDataPart("image", "image.$ext", imageBody)
-            request.header("Authorization", "Client-ID $imgurClientId")
-        } else {
-            builder.addFormDataPart("id", gyazoId)
-            builder.addFormDataPart("imagedata", "gyazo.com", imageBody)
+        when (endpoint.type) {
+            UploadEndpoint.Type.IMGUR -> {
+                builder.addFormDataPart("image", "image.$ext", imageBody)
+                request.header("Authorization", "Client-ID $imgurClientId")
+            }
+            UploadEndpoint.Type.GYAZO_API -> {
+                // The API requires a filename in Content-Disposition.
+                builder.addFormDataPart("imagedata", "image.$ext", imageBody)
+                builder.addFormDataPart("app", "ShareGyazo")
+            }
+            UploadEndpoint.Type.CGI -> {
+                builder.addFormDataPart("id", gyazoId)
+                builder.addFormDataPart("imagedata", "gyazo.com", imageBody)
+            }
+        }
+        // A user-supplied token takes precedence (e.g. an imgur OAuth access token).
+        if (bearerToken.isNotBlank()) {
+            request.header("Authorization", "Bearer ${bearerToken.trim()}")
         }
         val body = ProgressRequestBody(builder.build(), onProgress)
 
@@ -109,8 +145,6 @@ class Uploader(
     }
 
     companion object {
-        private const val IMGUR_CLIENT_ID = "de242da82e84888"
-
         private val defaultClient: OkHttpClient by lazy {
             OkHttpClient.Builder()
                 .connectTimeout(15, TimeUnit.SECONDS)

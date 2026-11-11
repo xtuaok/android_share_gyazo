@@ -1,9 +1,36 @@
 package xtuaok.sharegyazo.data
 
+import androidx.annotation.Keep
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import java.util.UUID
+
+/** Built-in services have a fixed destination; everything else is user defined. */
+@Serializable
+enum class ProfileKind {
+    /** Any Gyazo-compatible upload.cgi server (legacy profiles). */
+    @SerialName("custom") CUSTOM,
+
+    /** gyazo.com official API, authenticated by OAuth login. */
+    @SerialName("gyazo") GYAZO,
+
+    /** imgur API, authenticated by OAuth login (anonymous imgur is a custom profile). */
+    @SerialName("imgur") IMGUR,
+}
+
+/** Starting points offered when the user creates a custom profile. Also a navigation argument. */
+@Keep
+enum class ProfileTemplate {
+    /** Any Gyazo-compatible server; the user enters the URL. */
+    BLANK,
+
+    /** gyazo.com without login, through the legacy upload.cgi (as in versions <= 3.x). */
+    GYAZO_ANONYMOUS,
+
+    /** imgur without login, with the app's Client-ID (as in versions <= 3.x). */
+    IMGUR_ANONYMOUS,
+}
 
 /**
  * Upload destination profile.
@@ -20,26 +47,61 @@ data class Profile(
     @SerialName("mFormat") val format: String = FORMAT_PNG,
     @SerialName("mImageQuality") val quality: Int = 100,
     @SerialName("mUseCount") val useCount: Long = 0,
+    /** Sent as `Authorization: Bearer <token>` when not blank. For built-in profiles, the OAuth access token. */
+    @SerialName("bearerToken") val bearerToken: String = "",
+    @SerialName("kind") val kind: ProfileKind = ProfileKind.CUSTOM,
+    /** OAuth refresh token of built-in profiles (imgur). */
+    @SerialName("refreshToken") val refreshToken: String = "",
+    /** Epoch millis when [bearerToken] expires; 0 when it does not. */
+    @SerialName("tokenExpiresAt") val tokenExpiresAt: Long = 0,
 ) {
     val isPng: Boolean get() = format == FORMAT_PNG
+
+    /** Built-in profiles cannot be removed and their destination cannot be changed. */
+    val isBuiltIn: Boolean get() = kind != ProfileKind.CUSTOM
+
+    val isLoggedIn: Boolean get() = bearerToken.isNotBlank()
+
+    /** Custom profile pointing at imgur: anonymous upload with the app's Client-ID. */
+    val isImgurAnonymous: Boolean get() = kind == ProfileKind.CUSTOM && url.startsWith(IMGUR_URL)
 
     companion object {
         const val FORMAT_PNG = "png"
         const val FORMAT_JPEG = "jpg"
-        const val GYAZO_URL = "https://upload.gyazo.com/upload.cgi"
+        const val GYAZO_CGI_URL = "https://upload.gyazo.com/upload.cgi"
+        const val GYAZO_API_URL = "https://upload.gyazo.com/api/upload"
         const val IMGUR_URL = "https://api.imgur.com/"
+        const val IMGUR_API_URL = "https://api.imgur.com/3/image"
 
-        fun newGyazo(name: String = "Gyazo") = Profile(name = name, url = GYAZO_URL)
+        fun newCustom(template: ProfileTemplate = ProfileTemplate.BLANK, name: String = "") = when (template) {
+            ProfileTemplate.BLANK -> Profile(name = name, url = "https://")
+            ProfileTemplate.GYAZO_ANONYMOUS -> Profile(name = name, url = GYAZO_CGI_URL)
+            ProfileTemplate.IMGUR_ANONYMOUS -> Profile(name = name, url = IMGUR_URL)
+        }
 
-        /** Typing a well-known service name as the profile name fills in its URL. */
-        fun presetUrlFor(name: String): String? = when (name.trim().lowercase()) {
-            "gyazo" -> GYAZO_URL
-            "imgur" -> IMGUR_URL
-            else -> null
+        fun builtIn(kind: ProfileKind): Profile = when (kind) {
+            ProfileKind.GYAZO -> Profile(name = "Gyazo", url = GYAZO_API_URL, kind = kind)
+            ProfileKind.IMGUR -> Profile(name = "imgur", url = IMGUR_API_URL, kind = kind)
+            ProfileKind.CUSTOM -> error("Custom profiles are not built in")
+        }
+
+        /**
+         * Makes sure each built-in profile exists exactly once, placed first. Legacy
+         * profiles (Gyazo upload.cgi, anonymous imgur) stay custom and keep working as before.
+         */
+        fun withBuiltIns(profiles: List<Profile>): List<Profile> {
+            val builtIns = listOf(ProfileKind.GYAZO, ProfileKind.IMGUR).map { kind ->
+                profiles.firstOrNull { it.kind == kind }?.copy(url = builtIn(kind).url) ?: builtIn(kind)
+            }
+            return builtIns + profiles.filter { it.kind == ProfileKind.CUSTOM }
         }
 
         fun isValidUrl(url: String): Boolean =
             url.startsWith("http://") || url.startsWith("https://")
+
+        /** A token would be sent in clear text. */
+        fun isInsecureForToken(url: String, token: String): Boolean =
+            token.isNotBlank() && url.trim().startsWith("http://")
     }
 }
 

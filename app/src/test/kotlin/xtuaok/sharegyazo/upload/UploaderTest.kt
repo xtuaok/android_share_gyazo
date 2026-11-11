@@ -8,10 +8,12 @@ import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
+import xtuaok.sharegyazo.data.Profile
+import xtuaok.sharegyazo.data.ProfileKind
 import java.io.File
 
 class UploadProtocolTest {
-    private val gyazo = UploadEndpoint.forProfileUrl("https://upload.gyazo.com/upload.cgi")
+    private val gyazo = UploadEndpoint("https://upload.gyazo.com/upload.cgi", UploadEndpoint.Type.CGI)
 
     @Test
     fun gyazoPageUrlBecomesImageUrl() {
@@ -23,7 +25,7 @@ class UploadProtocolTest {
 
     @Test
     fun customServerResponseIsReturnedAsIs() {
-        val custom = UploadEndpoint.forProfileUrl("https://example.com/upload.cgi")
+        val custom = UploadEndpoint("https://example.com/upload.cgi", UploadEndpoint.Type.CGI)
         assertEquals(
             "https://example.com/i/42.png",
             UploadProtocol.resolveImageUrl(custom, "https://example.com/i/42.png", "png"),
@@ -38,14 +40,42 @@ class UploadProtocolTest {
 
     @Test
     fun imgurEndpointAndResponse() {
-        val imgur = UploadEndpoint.forProfileUrl("https://api.imgur.com/")
-        assertTrue(imgur.isImgur)
+        val imgur = UploadEndpoint.forProfile(Profile(name = "anon", url = "https://api.imgur.com/"))
+        assertEquals(UploadEndpoint.Type.IMGUR, imgur.type)
         assertEquals(UploadEndpoint.IMGUR_UPLOAD, imgur.url)
         assertEquals(
             "https://i.imgur.com/abc.png",
             UploadProtocol.resolveImageUrl(imgur, """{"data":{"link":"https://i.imgur.com/abc.png"},"success":true}""", "png"),
         )
         assertNull(UploadProtocol.resolveImageUrl(imgur, """{"data":{"error":"x"}}""", "png"))
+    }
+
+    @Test
+    fun endpointForEachKind() {
+        assertEquals(
+            UploadEndpoint(Profile.GYAZO_API_URL, UploadEndpoint.Type.GYAZO_API),
+            UploadEndpoint.forProfile(Profile.builtIn(ProfileKind.GYAZO)),
+        )
+        assertEquals(
+            UploadEndpoint(Profile.IMGUR_API_URL, UploadEndpoint.Type.IMGUR),
+            UploadEndpoint.forProfile(Profile.builtIn(ProfileKind.IMGUR)),
+        )
+        assertEquals(
+            UploadEndpoint("https://example.com/up.cgi", UploadEndpoint.Type.CGI),
+            UploadEndpoint.forProfile(Profile(name = "own", url = "https://example.com/up.cgi")),
+        )
+    }
+
+    @Test
+    fun gyazoApiResponse() {
+        val api = UploadEndpoint.forProfile(Profile.builtIn(ProfileKind.GYAZO))
+        val body = """{"image_id":"8980","permalink_url":"https://gyazo.com/8980","url":"https://i.gyazo.com/8980.png","type":"png"}"""
+        assertEquals("https://i.gyazo.com/8980.png", UploadProtocol.resolveImageUrl(api, body, "png"))
+        assertEquals(
+            "https://gyazo.com/8980",
+            UploadProtocol.resolveImageUrl(api, """{"permalink_url":"https://gyazo.com/8980"}""", "png"),
+        )
+        assertNull(UploadProtocol.resolveImageUrl(api, """{"message":"Unauthorized"}""", "png"))
     }
 
     @Test
@@ -82,7 +112,7 @@ class UploaderTest {
                 .build(),
         )
         val progress = mutableListOf<Int>()
-        val endpoint = UploadEndpoint(server.url("/upload.cgi").toString(), isImgur = false)
+        val endpoint = UploadEndpoint(server.url("/upload.cgi").toString(), UploadEndpoint.Type.CGI)
 
         val response = Uploader().upload(endpoint, image, "image/png", "my-id") { progress += it }
 
@@ -100,7 +130,7 @@ class UploaderTest {
     @Test
     fun imgurSendsClientIdHeader() {
         server.enqueue(MockResponse.Builder().body("""{"data":{"link":"https://i.imgur.com/x.jpg"}}""").build())
-        val endpoint = UploadEndpoint(server.url("/3/upload.json").toString(), isImgur = true)
+        val endpoint = UploadEndpoint(server.url("/3/upload.json").toString(), UploadEndpoint.Type.IMGUR)
 
         Uploader(imgurClientId = "cid").upload(endpoint, image, "image/jpeg", "")
 
@@ -110,9 +140,53 @@ class UploaderTest {
     }
 
     @Test
+    fun bearerTokenIsSentAsAuthorizationHeader() {
+        server.enqueue(MockResponse.Builder().body("https://example.com/i/1.png").build())
+        val endpoint = UploadEndpoint(server.url("/upload.cgi").toString(), UploadEndpoint.Type.CGI)
+
+        Uploader().upload(endpoint, image, "image/png", "", bearerToken = " secret-token ")
+
+        assertEquals("Bearer secret-token", server.takeRequest().headers["Authorization"])
+    }
+
+    @Test
+    fun noAuthorizationHeaderWithoutToken() {
+        server.enqueue(MockResponse.Builder().body("https://example.com/i/1.png").build())
+        val endpoint = UploadEndpoint(server.url("/upload.cgi").toString(), UploadEndpoint.Type.CGI)
+
+        Uploader().upload(endpoint, image, "image/png", "")
+
+        assertNull(server.takeRequest().headers["Authorization"])
+    }
+
+    @Test
+    fun bearerTokenOverridesImgurClientId() {
+        server.enqueue(MockResponse.Builder().body("""{"data":{"link":"https://i.imgur.com/x.jpg"}}""").build())
+        val endpoint = UploadEndpoint(server.url("/3/upload.json").toString(), UploadEndpoint.Type.IMGUR)
+
+        Uploader(imgurClientId = "cid").upload(endpoint, image, "image/jpeg", "", bearerToken = "oauth")
+
+        assertEquals("Bearer oauth", server.takeRequest().headers["Authorization"])
+    }
+
+    @Test
+    fun gyazoApiUsesBearerAndImagedataWithFilename() {
+        server.enqueue(MockResponse.Builder().body("""{"url":"https://i.gyazo.com/x.png"}""").build())
+        val endpoint = UploadEndpoint(server.url("/api/upload").toString(), UploadEndpoint.Type.GYAZO_API)
+
+        Uploader().upload(endpoint, image, "image/png", "", bearerToken = "gyazo-token")
+
+        val request = server.takeRequest()
+        assertEquals("Bearer gyazo-token", request.headers["Authorization"])
+        val body = request.body!!.utf8()
+        assertTrue(body.contains("name=\"imagedata\"; filename=\"image.png\""))
+        assertTrue(!body.contains("name=\"id\""))
+    }
+
+    @Test
     fun serverErrorIsNotSuccessful() {
         server.enqueue(MockResponse.Builder().code(500).body("oops").build())
-        val endpoint = UploadEndpoint(server.url("/").toString(), isImgur = false)
+        val endpoint = UploadEndpoint(server.url("/").toString(), UploadEndpoint.Type.CGI)
         val response = Uploader().upload(endpoint, image, "image/png", "")
         assertEquals(500, response.code)
         assertTrue(!response.isSuccessful)

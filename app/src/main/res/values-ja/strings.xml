@@ -71,10 +71,33 @@
     <string name="profile_menu_save_title">保存</string>
 
     <string name="rename_dialog_hint">プロファイル名</string>
-    <string name="cgi_url_dialog_title">Gyazo CGI URL</string>
+    <string name="cgi_url_dialog_title">アップロード先 URL</string>
     <string name="cgi_url_invalid">http:// または https:// で始まるURLを入力してください</string>
     <string name="gyazo_id_dialog_title">Gyazo ID</string>
     <string name="gyazo_id_dialog_hint">わからなければ空のままに</string>
+    <string name="bearer_token_title">Bearer トークン（任意）</string>
+    <string name="bearer_token_hint">設定すると \"Authorization: Bearer\" ヘッダを付けてアップロードします</string>
+    <string name="bearer_token_insecure">URL が http:// のため、トークンが暗号化されずに送信されます。https:// を使ってください</string>
+    <string name="show">表示</string>
+    <string name="logged_in">ログイン済み</string>
+    <string name="not_logged_in">未ログイン</string>
+    <string name="login_to">%s にログイン</string>
+    <string name="logout">ログアウト</string>
+    <string name="login_succeeded">%s にログインしました</string>
+    <string name="login_failed">%1$s へのログインに失敗しました: %2$s</string>
+    <string name="login_required">先に設定画面で %s にログインしてください</string>
+    <string name="imgur_destination">imgur の API で、ログインしたアカウントにアップロードします</string>
+    <string name="imgur_anonymous_summary">imgur・匿名アップロード</string>
+    <string name="template_imgur_anonymous">imgur（匿名）</string>
+    <string name="template_imgur_anonymous_summary">ログインせずに imgur にアップロードします（以前のバージョンと同じ）</string>
+    <string name="builtin_badge">標準</string>
+    <string name="template_dialog_title">新しいプロファイル</string>
+    <string name="template_gyazo_anonymous">Gyazo（匿名）</string>
+    <string name="template_gyazo_anonymous_summary">ログインせずに Gyazo にアップロードします（以前のバージョンと同じ upload.cgi）</string>
+    <string name="template_blank">その他のサーバ</string>
+    <string name="template_blank_summary">Gyazo 互換サーバの URL を入力します</string>
+    <string name="gyazo_destination">Gyazo の公式 API で、ログインしたアカウントにアップロードします</string>
+    <string name="hide">隠す</string>
 
     <string name="image_format">画像フォーマット</string>
     <string name="image_quality_dialog_message">JPEG 画像品質: %d</string>
@@ -83,7 +106,6 @@
     <string name="remove_confirm_message">プロファイル %s を削除してもよろしいですか?</string>
     <string name="toast_save_profile">プロファイルを保存しました</string>
     <string name="toast_remove_profile">プロファイルを削除しました</string>
-    <string name="cannot_remove_profile">最後のプロファイルは削除できません</string>
 
     <!-- Profile chooser -->
     <string name="select_profile">プロファイル選択</string>

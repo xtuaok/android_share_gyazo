@@ -18,6 +18,9 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import xtuaok.sharegyazo.R
 import xtuaok.sharegyazo.app
+import xtuaok.sharegyazo.auth.AccountLogin
+import xtuaok.sharegyazo.auth.OAuthProvider
+import xtuaok.sharegyazo.auth.OAuthRejectedException
 import xtuaok.sharegyazo.data.Profile
 import xtuaok.sharegyazo.data.ProfileCodec
 import java.io.File
@@ -59,10 +62,21 @@ class UploadWorker(context: Context, params: WorkerParameters) : CoroutineWorker
             }
 
             try {
-                val endpoint = UploadEndpoint.forProfileUrl(profile.url)
+                val endpoint = UploadEndpoint.forProfile(profile)
+                val provider = OAuthProvider.of(profile.kind)
+                if (provider != null && !profile.isLoggedIn) {
+                    return fail(ctx.getString(R.string.login_required, provider.displayName))
+                }
                 val response = try {
                     withContext(Dispatchers.IO) {
-                        Uploader().upload(endpoint, converted.file, converted.mimeType, profile.gyazoId) { percent ->
+                        val current = try {
+                            AccountLogin.ensureFresh(ctx, profile)
+                        } catch (e: OAuthRejectedException) {
+                            return@withContext null
+                        }
+                        Uploader().upload(
+                            endpoint, converted.file, converted.mimeType, current.gyazoId, current.bearerToken,
+                        ) { percent ->
                             setProgressAsync(workDataOf(KEY_PROGRESS to percent))
                             if (settings.showNotification) {
                                 Notifications.notify(ctx, foregroundId, Notifications.progress(ctx, percent))
@@ -78,7 +92,12 @@ class UploadWorker(context: Context, params: WorkerParameters) : CoroutineWorker
                     return fail("${ctx.getString(R.string.error_network)}: ${e.message}", e)
                 }
 
-                response.gyazoId?.let { ctx.app.profiles.updateGyazoId(profile.uuid, it) }
+                if (response == null) {
+                    return fail(ctx.getString(R.string.login_required, provider?.displayName.orEmpty()))
+                }
+                if (endpoint.type == UploadEndpoint.Type.CGI) {
+                    response.gyazoId?.let { ctx.app.profiles.updateGyazoId(profile.uuid, it) }
+                }
 
                 val url = UploadProtocol.resolveImageUrl(endpoint, response.body, profile.format)
                 if (!response.isSuccessful || url == null) {

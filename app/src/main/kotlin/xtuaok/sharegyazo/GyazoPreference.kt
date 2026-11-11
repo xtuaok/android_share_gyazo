@@ -9,6 +9,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
 import kotlinx.serialization.Serializable
+import xtuaok.sharegyazo.data.ProfileTemplate
 import xtuaok.sharegyazo.share.ShareShortcuts
 import xtuaok.sharegyazo.ui.profile.ProfileEditScreen
 import xtuaok.sharegyazo.ui.profile.ProfileListScreen
@@ -18,7 +19,10 @@ import xtuaok.sharegyazo.ui.theme.ShareGyazoTheme
 
 @Serializable private data object SettingsRoute
 @Serializable private data object ProfilesRoute
-@Serializable private data class ProfileEditRoute(val uuid: String? = null)
+@Serializable private data class ProfileEditRoute(
+    val uuid: String? = null,
+    val template: ProfileTemplate = ProfileTemplate.BLANK,
+)
 @Serializable private data object LicensesRoute
 
 /**
@@ -48,11 +52,14 @@ class GyazoPreference : ComponentActivity() {
                         ProfileListScreen(
                             onBack = { nav.popBackStack() },
                             onEdit = { uuid -> nav.navigate(ProfileEditRoute(uuid)) },
+                            onCreate = { template -> nav.navigate(ProfileEditRoute(template = template)) },
                         )
                     }
                     composable<ProfileEditRoute> { entry ->
+                        val route = entry.toRoute<ProfileEditRoute>()
                         ProfileEditScreen(
-                            uuid = entry.toRoute<ProfileEditRoute>().uuid,
+                            uuid = route.uuid,
+                            template = route.template,
                             onDone = { nav.popBackStack() },
                         )
                     }
