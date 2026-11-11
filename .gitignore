@@ -21,6 +21,9 @@ keystore.properties
 .idea/
 *.iml
 
+# Claude Code (worktrees, local settings)
+.claude/
+
 # Cloudflare
 site/.wrangler/
 site/node_modules/
