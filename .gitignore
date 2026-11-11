@@ -2,6 +2,8 @@
 .gradle/
 .kotlin/
 build/
+output/*
+!output/.gitkeep
 local.properties
 *.apk
 *.aab

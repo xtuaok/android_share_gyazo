@@ -1,3 +1,5 @@
+import com.android.build.api.artifact.SingleArtifact
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
@@ -19,8 +21,8 @@ android {
         applicationId = "xtuaok.sharegyazo"
         minSdk = 28
         targetSdk = 37
-        versionCode = 30
-        versionName = "3.0"
+        versionCode = 31
+        versionName = "4.0.0"
     }
 
     signingConfigs {
@@ -52,6 +54,35 @@ android {
     buildFeatures {
         compose = true
         buildConfig = true
+    }
+}
+
+// Copy APK / AAB to <workspace>/output/ as ShareGyazo-<versionName>-<versionCode>[-<variant>].{apk,aab}
+// after assemble* / bundle* finishes.
+val artifactOutputDir = rootProject.layout.projectDirectory.dir("output")
+
+androidComponents {
+    onVariants { variant ->
+        val taskSuffix = variant.name.replaceFirstChar(Char::titlecase)
+        val output = variant.outputs.single()
+        val versionName = output.versionName
+        val versionCode = output.versionCode
+        val variantSuffix = if (variant.buildType == "release") "" else "-${variant.name}"
+        fun fileName(ext: String) =
+            "ShareGyazo-${versionName.get()}-${versionCode.get()}$variantSuffix.$ext"
+
+        val copyApk = tasks.register<Copy>("copy${taskSuffix}ApkToOutput") {
+            from(variant.artifacts.get(SingleArtifact.APK)) { include("*.apk") }
+            into(artifactOutputDir)
+            rename { fileName("apk") }
+        }
+        val copyBundle = tasks.register<Copy>("copy${taskSuffix}BundleToOutput") {
+            from(variant.artifacts.get(SingleArtifact.BUNDLE))
+            into(artifactOutputDir)
+            rename { fileName("aab") }
+        }
+        tasks.matching { it.name == "assemble$taskSuffix" }.configureEach { finalizedBy(copyApk) }
+        tasks.matching { it.name == "bundle$taskSuffix" }.configureEach { finalizedBy(copyBundle) }
     }
 }
 
