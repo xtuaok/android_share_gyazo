@@ -1,6 +1,7 @@
 package xtuaok.sharegyazo.share
 
 import android.app.Application
+import android.content.ContentResolver
 import android.content.Intent
 import android.net.Uri
 import android.util.Log
@@ -8,6 +9,7 @@ import android.widget.Toast
 import androidx.core.content.IntentCompat
 import androidx.core.content.pm.ShortcutManagerCompat
 import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.viewModelScope
 import androidx.work.WorkInfo
 import androidx.work.WorkManager
@@ -38,7 +40,10 @@ sealed interface ShareUiState {
     data object Finished : ShareUiState
 }
 
-class ShareViewModel(application: Application) : AndroidViewModel(application) {
+class ShareViewModel(
+    application: Application,
+    private val savedState: SavedStateHandle,
+) : AndroidViewModel(application) {
     private val app = application.app
     private val _state = MutableStateFlow<ShareUiState>(ShareUiState.Idle)
     val state: StateFlow<ShareUiState> = _state.asStateFlow()
@@ -46,16 +51,33 @@ class ShareViewModel(application: Application) : AndroidViewModel(application) {
     private var source: Uri? = null
     private var started = false
 
+    /** Safe to call again after a configuration change or process death. */
     fun begin(intent: Intent) {
         if (started) return
         started = true
 
-        source = intent.data
+        // Restored after process death once the upload was already queued: do not upload twice.
+        savedState.get<String>(KEY_WORK_ID)?.let { id ->
+            val settings = app.settings.settings.value
+            if (settings.needsForegroundAction) {
+                _state.value = ShareUiState.Uploading(null)
+                viewModelScope.launch { awaitResult(UUID.fromString(id), settings.openBrowser) }
+            } else {
+                finish()
+            }
+            return
+        }
+
+        val uri = intent.data
             ?: IntentCompat.getParcelableExtra(intent, Intent.EXTRA_STREAM, Uri::class.java)
-        if (source == null) {
+        // Only content:// URIs granted by the sharing app. A file:// URI would be read with this
+        // app's own permissions, letting another app get this app's private files uploaded.
+        if (uri?.scheme != ContentResolver.SCHEME_CONTENT) {
+            if (uri != null) toast(R.string.error_storage)
             _state.value = ShareUiState.Finished
             return
         }
+        source = uri
 
         val profiles = app.profiles
         val requested = intent.getStringExtra(ShortcutManagerCompat.EXTRA_SHORTCUT_ID)
@@ -99,6 +121,7 @@ class ShareViewModel(application: Application) : AndroidViewModel(application) {
             app.profiles.markUsed(profile.uuid)
             ShareShortcuts.reportUsed(app, profile)
             val workId = UploadWorker.enqueue(app, profile, file)
+            savedState[KEY_WORK_ID] = workId.toString()
 
             if (settings.needsForegroundAction) {
                 awaitResult(workId, settings.openBrowser)
@@ -151,5 +174,6 @@ class ShareViewModel(application: Application) : AndroidViewModel(application) {
         const val TAG = "ShareViewModel"
         /** Extra used by the legacy ChooserTargetService. */
         const val EXTRA_LEGACY_UUID = "uuid"
+        const val KEY_WORK_ID = "work_id"
     }
 }

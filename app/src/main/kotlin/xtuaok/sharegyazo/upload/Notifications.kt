@@ -70,6 +70,10 @@ object Notifications {
         }
     }
 
+    fun cancel(context: Context, id: Int) {
+        NotificationManagerCompat.from(context).cancel(id)
+    }
+
     fun showDone(context: Context, url: String, thumbnail: Bitmap?, settings: AppSettings) {
         val base = url.hashCode() * 4
         val view = PendingIntent.getActivity(context, base, viewIntent(url), FLAGS)

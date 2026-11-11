@@ -40,11 +40,15 @@ class UploadWorker(context: Context, params: WorkerParameters) : CoroutineWorker
     override suspend fun doWork(): Result {
         val ctx = applicationContext
         val settings = ctx.app.settings.settings.value
-        val profile = inputData.getString(KEY_PROFILE)?.let(ProfileCodec::decodeOrNull)
+        val snapshot = inputData.getString(KEY_PROFILE)?.let(ProfileCodec::decodeOrNull)
         val source = inputData.getString(KEY_FILE)?.let(::File)
-        if (profile == null || source == null || !source.exists()) {
+        if (snapshot == null || source == null || !source.exists()) {
+            source?.delete()
             return Result.failure(workDataOf(KEY_ERROR to "Invalid request"))
         }
+        // Credentials are not stored with the job: read the current ones (a retry may run
+        // after a login, logout or token refresh).
+        val profile = ctx.app.profiles.get(snapshot.uuid)?.let(snapshot::withCredentialsOf) ?: snapshot
 
         if (settings.showNotification) {
             runCatching { setForeground(foregroundInfo(null)) }
@@ -119,6 +123,9 @@ class UploadWorker(context: Context, params: WorkerParameters) : CoroutineWorker
             }
         } finally {
             if (!willRetry) source.delete()
+            // Normally removed with the foreground service; posted by hand when running in the
+            // foreground was not allowed, so make sure it does not stay "uploading".
+            Notifications.cancel(ctx, foregroundId)
         }
     }
 
@@ -156,7 +163,10 @@ class UploadWorker(context: Context, params: WorkerParameters) : CoroutineWorker
         fun enqueue(context: Context, profile: Profile, file: File): UUID {
             val request = OneTimeWorkRequestBuilder<UploadWorker>()
                 .setInputData(
-                    workDataOf(KEY_PROFILE to ProfileCodec.encode(profile), KEY_FILE to file.absolutePath),
+                    workDataOf(
+                        KEY_PROFILE to ProfileCodec.encode(profile.withoutCredentials()),
+                        KEY_FILE to file.absolutePath,
+                    ),
                 )
                 .setConstraints(Constraints(requiredNetworkType = NetworkType.CONNECTED))
                 .setExpedited(OutOfQuotaPolicy.RUN_AS_NON_EXPEDITED_WORK_REQUEST)

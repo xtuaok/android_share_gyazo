@@ -4,6 +4,7 @@ import androidx.annotation.Keep
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
+import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import java.util.UUID
 
 /** Built-in services have a fixed destination; everything else is user defined. */
@@ -64,6 +65,17 @@ data class Profile(
 
     val isLoggedIn: Boolean get() = bearerToken.isNotBlank()
 
+    /** Copy without credentials, e.g. to hand to a background job; read them back with [withCredentialsOf]. */
+    fun withoutCredentials(): Profile =
+        copy(bearerToken = "", refreshToken = "", tokenExpiresAt = 0, accountName = "")
+
+    fun withCredentialsOf(other: Profile): Profile = copy(
+        bearerToken = other.bearerToken,
+        refreshToken = other.refreshToken,
+        tokenExpiresAt = other.tokenExpiresAt,
+        accountName = other.accountName,
+    )
+
     /** Custom profile pointing at imgur: anonymous upload with the app's Client-ID. */
     val isImgurAnonymous: Boolean get() = kind == ProfileKind.CUSTOM && url.startsWith(IMGUR_URL)
 
@@ -98,8 +110,12 @@ data class Profile(
             return builtIns + profiles.filter { it.kind == ProfileKind.CUSTOM }
         }
 
-        fun isValidUrl(url: String): Boolean =
-            url.startsWith("http://") || url.startsWith("https://")
+        /** An http(s) URL with a host. */
+        fun isValidUrl(url: String): Boolean {
+            val trimmed = url.trim()
+            if (!trimmed.startsWith("http://") && !trimmed.startsWith("https://")) return false
+            return trimmed.toHttpUrlOrNull()?.host?.isNotEmpty() == true
+        }
 
         /** A token would be sent in clear text. */
         fun isInsecureForToken(url: String, token: String): Boolean =

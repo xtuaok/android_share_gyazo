@@ -78,6 +78,28 @@ class ProfileCodecTest {
     }
 
     @Test
+    fun urlValidation() {
+        assertTrue(Profile.isValidUrl("https://example.com/upload.cgi"))
+        assertTrue(Profile.isValidUrl(" http://10.0.2.2:8765/upload.cgi "))
+        assertTrue(!Profile.isValidUrl("https://"))
+        assertTrue(!Profile.isValidUrl("http:// "))
+        assertTrue(!Profile.isValidUrl("ftp://example.com/"))
+        assertTrue(!Profile.isValidUrl("example.com/upload"))
+    }
+
+    @Test
+    fun credentialsAreNotCopiedIntoJobs() {
+        val imgur = Profile.builtIn(ProfileKind.IMGUR)
+            .copy(bearerToken = "a", refreshToken = "r", tokenExpiresAt = 42, accountName = "taro", quality = 80)
+        val stripped = imgur.withoutCredentials()
+        assertEquals("", stripped.bearerToken)
+        assertEquals("", stripped.refreshToken)
+        assertEquals(0L, stripped.tokenExpiresAt)
+        assertEquals(80, stripped.quality)
+        assertEquals(imgur, stripped.withCredentialsOf(imgur))
+    }
+
+    @Test
     fun templates() {
         assertEquals(Profile.GYAZO_CGI_URL, Profile.newCustom(ProfileTemplate.GYAZO_ANONYMOUS).url)
         assertTrue(Profile.newCustom(ProfileTemplate.IMGUR_ANONYMOUS).isImgurAnonymous)

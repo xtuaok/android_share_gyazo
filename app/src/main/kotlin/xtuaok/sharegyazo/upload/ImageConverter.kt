@@ -1,7 +1,10 @@
 package xtuaok.sharegyazo.upload
 
 import android.graphics.Bitmap
+import android.graphics.Canvas
+import android.graphics.Color
 import android.graphics.ImageDecoder
+import androidx.core.graphics.createBitmap
 import androidx.core.graphics.scale
 import xtuaok.sharegyazo.data.Profile
 import java.io.File
@@ -27,9 +30,13 @@ object ImageConverter {
             val (format, mime) =
                 if (profile.isPng) Bitmap.CompressFormat.PNG to "image/png"
                 else Bitmap.CompressFormat.JPEG to "image/jpeg"
+            // JPEG has no alpha: transparent pixels would come out black, so put them on white.
+            val encoded = if (!profile.isPng && bitmap.hasAlpha()) onWhite(bitmap) else bitmap
             val out = File.createTempFile("upload", if (profile.isPng) ".png" else ".jpg", outDir)
             out.outputStream().buffered().use { stream ->
-                if (!bitmap.compress(format, profile.quality.coerceIn(0, 100), stream)) {
+                val ok = encoded.compress(format, profile.quality.coerceIn(0, 100), stream)
+                if (encoded !== bitmap) encoded.recycle()
+                if (!ok) {
                     out.delete()
                     throw IOException("Failed to encode image")
                 }
@@ -39,5 +46,14 @@ object ImageConverter {
         } finally {
             bitmap.recycle()
         }
+    }
+
+    private fun onWhite(source: Bitmap): Bitmap {
+        val result = createBitmap(source.width, source.height)
+        Canvas(result).apply {
+            drawColor(Color.WHITE)
+            drawBitmap(source, 0f, 0f, null)
+        }
+        return result
     }
 }
