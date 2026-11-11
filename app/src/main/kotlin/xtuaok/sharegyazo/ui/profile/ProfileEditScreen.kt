@@ -1,5 +1,6 @@
 package xtuaok.sharegyazo.ui.profile
 
+import android.content.Intent
 import android.widget.Toast
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -40,6 +41,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
+import androidx.core.net.toUri
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import xtuaok.sharegyazo.R
 import xtuaok.sharegyazo.app
@@ -53,6 +55,8 @@ import xtuaok.sharegyazo.ui.components.BackButton
 import xtuaok.sharegyazo.ui.components.PreferenceCategory
 import xtuaok.sharegyazo.ui.components.ResourceIconButton
 import kotlin.math.roundToInt
+
+private const val IMGUR_SIGN_IN_URL = "https://imgur.com/signin"
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -136,16 +140,37 @@ fun ProfileEditScreen(
             val provider = OAuthProvider.of(profile.kind)
             if (provider != null) {
                 // Login state changes outside this screen (browser round trip), so read it live.
-                val loggedIn = profiles.firstOrNull { it.kind == profile.kind }?.isLoggedIn == true
+                val live = profiles.firstOrNull { it.kind == profile.kind }
+                val loggedIn = live?.isLoggedIn == true
                 AccountSection(
                     description = stringResource(
                         if (provider == OAuthProvider.GYAZO) R.string.gyazo_destination else R.string.imgur_destination,
                     ),
                     serviceName = provider.displayName,
                     loggedIn = loggedIn,
+                    accountName = live?.accountName.orEmpty(),
                     onLogin = { AccountLogin.start(context, provider) },
                     onLogout = { AccountLogin.logout(context, provider) },
                 )
+                if (provider == OAuthProvider.IMGUR && !loggedIn) {
+                    // imgur's sign-in offers Google and Apple, but the authorize page only has outdated
+                    // social buttons (Google redirects to the home page, Facebook's app is disabled, no
+                    // Apple). Signing in on imgur.com first lets the authorize page (in a Custom Tab
+                    // sharing the browser session) reuse that session.
+                    Text(
+                        stringResource(R.string.imgur_social_login_hint),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    TextButton(
+                        onClick = {
+                            context.startActivity(
+                                Intent(Intent.ACTION_VIEW, IMGUR_SIGN_IN_URL.toUri())
+                                    .addCategory(Intent.CATEGORY_BROWSABLE),
+                            )
+                        },
+                    ) { Text(stringResource(R.string.imgur_open_sign_in)) }
+                }
             } else {
                 OutlinedTextField(
                     value = profile.url,
@@ -235,6 +260,7 @@ private fun AccountSection(
     description: String,
     serviceName: String,
     loggedIn: Boolean,
+    accountName: String,
     onLogin: () -> Unit,
     onLogout: () -> Unit,
 ) {
@@ -244,7 +270,7 @@ private fun AccountSection(
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(
-            stringResource(if (loggedIn) R.string.logged_in else R.string.not_logged_in),
+            loginState(loggedIn, accountName),
             style = MaterialTheme.typography.bodyLarge,
             color = if (loggedIn) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error,
             modifier = Modifier.weight(1f),

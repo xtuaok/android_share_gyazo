@@ -42,6 +42,7 @@ class ProfileRepository(
                     bearerToken = existing.bearerToken,
                     refreshToken = existing.refreshToken,
                     tokenExpiresAt = existing.tokenExpiresAt,
+                    accountName = existing.accountName,
                 )
             } else {
                 profile.copy(kind = ProfileKind.CUSTOM)
@@ -61,6 +62,8 @@ class ProfileRepository(
                     bearerToken = tokens?.accessToken.orEmpty(),
                     refreshToken = tokens?.refreshToken.orEmpty(),
                     tokenExpiresAt = tokens?.expiresAt ?: 0,
+                    // A refresh does not tell the account name; keep the one from login.
+                    accountName = if (tokens == null) "" else tokens.accountName.ifBlank { it.accountName },
                 )
             } else {
                 it

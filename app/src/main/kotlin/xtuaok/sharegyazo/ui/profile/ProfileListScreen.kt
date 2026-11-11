@@ -126,7 +126,14 @@ private fun TemplateDialog(onSelect: (ProfileTemplate) -> Unit, onDismiss: () ->
 @Composable
 private fun profileSummary(profile: Profile): String = when (profile.kind) {
     ProfileKind.GYAZO, ProfileKind.IMGUR ->
-        stringResource(if (profile.isLoggedIn) R.string.logged_in else R.string.not_logged_in)
+        loginState(profile.isLoggedIn, profile.accountName)
     ProfileKind.CUSTOM ->
         if (profile.isImgurAnonymous) stringResource(R.string.imgur_anonymous_summary) else profile.url
+}
+
+@Composable
+internal fun loginState(loggedIn: Boolean, accountName: String): String = when {
+    !loggedIn -> stringResource(R.string.not_logged_in)
+    accountName.isBlank() -> stringResource(R.string.logged_in)
+    else -> stringResource(R.string.logged_in_as, accountName)
 }

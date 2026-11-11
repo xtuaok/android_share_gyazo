@@ -54,6 +54,8 @@ data class Profile(
     @SerialName("refreshToken") val refreshToken: String = "",
     /** Epoch millis when [bearerToken] expires; 0 when it does not. */
     @SerialName("tokenExpiresAt") val tokenExpiresAt: Long = 0,
+    /** Account name shown next to the login state, when the service returns one at login (imgur). */
+    @SerialName("accountName") val accountName: String = "",
 ) {
     val isPng: Boolean get() = format == FORMAT_PNG
 

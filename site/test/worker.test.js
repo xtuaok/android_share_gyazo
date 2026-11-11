@@ -141,7 +141,7 @@ test("imgur callback forwards tokens from the fragment and clears them from hist
   });
   assert.equal(
     r.replaced,
-    "intent://oauth/imgur?access_token=a1&expires_in=2419200&refresh_token=r1&state=st" +
+    "intent://oauth/imgur?access_token=a1&expires_in=2419200&refresh_token=r1&account_username=x&state=st" +
       "#Intent;scheme=sharegyazo;package=xtuaok.sharegyazo;end",
   );
   assert.equal(r.historyUrl, `${PREFIX}/imgur/callback`);
