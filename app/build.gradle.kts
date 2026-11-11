@@ -4,6 +4,13 @@ plugins {
     alias(libs.plugins.kotlin.serialization)
 }
 
+// Release signing: set these in ~/.gradle/gradle.properties (never in this repository).
+//   sharegyazo.keystore=/path/to/keystore
+//   sharegyazo.keystorePassword=...
+//   sharegyazo.keyAlias=xtuaok-apk
+//   sharegyazo.keyPassword=...
+val releaseKeystore = providers.gradleProperty("sharegyazo.keystore").orNull
+
 android {
     namespace = "xtuaok.sharegyazo"
     compileSdk = 37
@@ -16,8 +23,21 @@ android {
         versionName = "3.0"
     }
 
+    signingConfigs {
+        if (releaseKeystore != null) {
+            create("release") {
+                storeFile = file(releaseKeystore)
+                storePassword = providers.gradleProperty("sharegyazo.keystorePassword").get()
+                keyAlias = providers.gradleProperty("sharegyazo.keyAlias").getOrElse("xtuaok-apk")
+                keyPassword = providers.gradleProperty("sharegyazo.keyPassword").get()
+            }
+        }
+    }
+
     buildTypes {
         release {
+            // Unsigned when the keystore is not configured (e.g. CI).
+            signingConfig = signingConfigs.findByName("release")
             isMinifyEnabled = true
             isShrinkResources = true
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")

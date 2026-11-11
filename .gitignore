@@ -9,6 +9,12 @@ captures/
 .externalNativeBuild/
 .cxx/
 
+# Signing keys
+*.jks
+*.keystore
+xtuaok-apk-key
+keystore.properties
+
 # IDE
 .idea/
 *.iml
