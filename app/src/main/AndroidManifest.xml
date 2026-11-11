@@ -1,74 +1,62 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="xtuaok.sharegyazo"
+    xmlns:tools="http://schemas.android.com/tools"
     android:installLocation="auto">
 
-    <uses-sdk android:targetSdkVersion="23" />
-
     <uses-permission android:name="android.permission.INTERNET" />
-    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
 
     <application
+        android:name=".ShareGyazoApp"
         android:allowBackup="true"
-        android:icon="@drawable/ic_launcher"
+        android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
-        android:largeHeap="true">
+        android:supportsRtl="true"
+        android:usesCleartextTraffic="true"
+        android:theme="@style/Theme.ShareGyazo">
+
+        <activity
+            android:name=".GyazoPreference"
+            android:exported="true"
+            android:label="@string/title_activity_preference"
+            android:windowSoftInputMode="adjustResize">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+            <meta-data
+                android:name="android.app.shortcuts"
+                android:resource="@xml/shortcuts" />
+        </activity>
 
         <activity
             android:name=".ShareGyazo"
-            android:label="@string/title_activity_share_gyazo"
-            android:launchMode="singleInstance"
             android:excludeFromRecents="true"
-            android:theme="@style/Translucent">
-            <intent-filter>
-                <action android:name="android.intent.action.VIEW" />
-
-                <category android:name="android.intent.category.DEFAULT" />
-
-                <data android:mimeType="image/png" />
-                <data android:mimeType="image/jpg" />
-                <data android:mimeType="image/jpeg" />
-                <data android:mimeType="image/gif" />
-            </intent-filter>
+            android:exported="true"
+            android:label="@string/title_activity_share_gyazo"
+            android:theme="@style/Theme.ShareGyazo.Translucent">
             <intent-filter>
                 <action android:name="android.intent.action.SEND" />
-
                 <category android:name="android.intent.category.DEFAULT" />
-
-                <data android:mimeType="image/png" />
-                <data android:mimeType="image/jpg" />
-                <data android:mimeType="image/jpeg" />
-                <data android:mimeType="image/gif" />
+                <data android:mimeType="image/*" />
             </intent-filter>
-            <meta-data android:name="android.service.chooser.chooser_target_service"
-                android:value=".ProfileChooserService" />
-        </activity>
-        <activity
-            android:name=".ClipText"
-            android:label="@string/title_activity_share_gyazo"
-            android:theme="@style/Theme.Transparent" />
-        <activity
-            android:name=".GyazoPreference"
-            android:label="@string/title_activity_preference"
-            android:theme="@style/AppTheme">
             <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-
+                <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
-                <category android:name="android.intent.category.LAUNCHER" />
+                <data android:mimeType="image/*" />
             </intent-filter>
         </activity>
 
-        <service android:name=".UploadService" />
+        <receiver
+            android:name=".upload.CopyUrlReceiver"
+            android:exported="false" />
+
         <service
-            android:name=".ProfileChooserService"
-            android:label="@string/app_name"
-            android:permission="android.permission.BIND_CHOOSER_TARGET_SERVICE">
-            <intent-filter>
-                <action android:name="android.service.chooser.ChooserTargetService" />
-            </intent-filter>
-        </service>
-
+            android:name="androidx.work.impl.foreground.SystemForegroundService"
+            android:foregroundServiceType="dataSync"
+            tools:node="merge" />
     </application>
 
 </manifest>
