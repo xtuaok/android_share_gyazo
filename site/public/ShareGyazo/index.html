@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ShareGyazo プライバシーポリシー / Privacy Policy</title>
+  <meta name="description" content="Android アプリ ShareGyazo のプライバシーポリシー">
+  <style>
+    :root {
+      --bg: #ffffff;
+      --fg: #1f2328;
+      --muted: #59636e;
+      --border: #d1d9e0;
+      --accent: #1e6bd6;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #0d1117;
+        --fg: #e6edf3;
+        --muted: #9198a1;
+        --border: #3d444d;
+        --accent: #6ea8fe;
+      }
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--fg);
+      font-family: system-ui, -apple-system, "Hiragino Sans", "Noto Sans JP", sans-serif;
+      line-height: 1.75;
+    }
+    main { max-width: 760px; margin: 0 auto; padding: 32px 16px 64px; }
+    h1 { font-size: 1.6rem; margin: 0 0 4px; }
+    h2 { font-size: 1.15rem; margin: 32px 0 8px; padding-bottom: 4px; border-bottom: 1px solid var(--border); }
+    section + section { margin-top: 56px; padding-top: 24px; border-top: 2px solid var(--border); }
+    .meta { color: var(--muted); font-size: .9rem; margin: 0; }
+    nav { margin: 16px 0 0; font-size: .95rem; }
+    a { color: var(--accent); }
+    ul { padding-left: 1.4em; }
+    .summary { padding: 12px 16px; border-left: 4px solid var(--accent); background: color-mix(in srgb, var(--accent) 8%, transparent); }
+  </style>
+</head>
+<body>
+<main>
+  <section id="ja" lang="ja">
+    <h1>ShareGyazo プライバシーポリシー</h1>
+    <p class="meta">最終更新日: 2026年11月11日</p>
+    <nav><a href="#en">English version below</a></nav>
+
+    <p class="summary">ShareGyazo（以下「本アプリ」）は、利用者の個人情報や利用状況を収集・送信しません。開発者が運営するサーバは存在せず、解析・広告・トラッキングの仕組みも含まれていません。</p>
+
+    <h2>1. 収集する情報</h2>
+    <p>本アプリは、開発者に対していかなる情報も収集・送信しません。アクセス解析、クラッシュレポート、広告 SDK などは一切使用していません。</p>
+
+    <h2>2. 画像の送信先</h2>
+    <p>本アプリは、利用者が共有メニューなどから明示的に選んだ画像だけを、利用者がプロファイルに設定したアップロード先サーバ（初期設定では Gyazo、その他 imgur や利用者自身が運用するサーバなど）へ送信します。送信の前に、画像は端末内で縮小・再エンコードされます。</p>
+    <p>送信された画像の取り扱いは、各アップロード先サービスの利用規約・プライバシーポリシーに従います。例: <a href="https://gyazo.com/privacy">Gyazo</a>、<a href="https://imgur.com/privacy">imgur</a>。</p>
+
+    <h2>3. 端末内に保存する情報</h2>
+    <ul>
+      <li>アプリの設定（アップロード後の動作、通知の設定など）</li>
+      <li>サーバプロファイル（名前、アップロード先 URL、Gyazo ID、画像形式、利用回数）</li>
+    </ul>
+    <p>これらは端末内にのみ保存され、開発者に送信されることはありません。Android のバックアップ機能が有効な場合、OS の仕組みにより利用者の Google アカウントにバックアップされることがあります。アプリをアンインストールすると端末内のデータは削除されます。</p>
+
+    <h2>4. 使用する権限</h2>
+    <ul>
+      <li><strong>インターネット</strong>: 画像をアップロード先サーバへ送信するため</li>
+      <li><strong>通知</strong>: アップロードの進捗と結果（画像 URL）を表示するため</li>
+      <li><strong>フォアグラウンドサービス</strong>: アプリを閉じてもアップロードを最後まで完了させるため</li>
+    </ul>
+    <p>画像は共有元アプリから受け取ったものだけを読み込み、端末内のストレージ全体へのアクセス権限は要求しません。</p>
+
+    <h2>5. 第三者への提供</h2>
+    <p>本アプリは、利用者が設定したアップロード先への画像送信を除き、いかなる情報も第三者に提供しません。</p>
+
+    <h2>6. 本ポリシーの変更</h2>
+    <p>本ポリシーを変更する場合は、このページで告知します。</p>
+
+    <h2>7. お問い合わせ</h2>
+    <p>本ポリシーに関するお問い合わせは <a href="https://github.com/xtuaok/android_share_gyazo/issues">GitHub の Issues</a> までお願いします。</p>
+  </section>
+
+  <section id="en" lang="en">
+    <h1>ShareGyazo Privacy Policy</h1>
+    <p class="meta">Last updated: November 11, 2026</p>
+
+    <p class="summary">ShareGyazo (“the app”) does not collect or transmit any personal information or usage data. There is no server operated by the developer, and the app contains no analytics, advertising or tracking.</p>
+
+    <h2>1. Information we collect</h2>
+    <p>The app does not collect or send any information to the developer. No analytics, crash reporting or advertising SDKs are used.</p>
+
+    <h2>2. Where images are sent</h2>
+    <p>The app sends only the images you explicitly choose (for example from the share menu) to the upload server configured in your profile (Gyazo by default, or imgur or a server you operate yourself). Images are resized and re-encoded on your device before upload.</p>
+    <p>Uploaded images are handled according to the terms and privacy policy of the destination service, e.g. <a href="https://gyazo.com/privacy">Gyazo</a> or <a href="https://imgur.com/privacy">imgur</a>.</p>
+
+    <h2>3. Data stored on your device</h2>
+    <ul>
+      <li>App settings (actions after upload, notification settings, etc.)</li>
+      <li>Server profiles (name, upload URL, Gyazo ID, image format, usage count)</li>
+    </ul>
+    <p>This data stays on your device and is never sent to the developer. If Android backup is enabled, the operating system may back it up to your Google account. Uninstalling the app deletes this data from the device.</p>
+
+    <h2>4. Permissions</h2>
+    <ul>
+      <li><strong>Internet</strong>: to send images to the upload server</li>
+      <li><strong>Notifications</strong>: to show upload progress and the resulting image URL</li>
+      <li><strong>Foreground service</strong>: to finish uploads even after you leave the app</li>
+    </ul>
+    <p>The app reads only the images handed to it by the sharing app and does not request access to your device storage.</p>
+
+    <h2>5. Sharing with third parties</h2>
+    <p>Apart from sending images to the upload server you configure, the app does not share any information with third parties.</p>
+
+    <h2>6. Changes to this policy</h2>
+    <p>Any changes to this policy will be posted on this page.</p>
+
+    <h2>7. Contact</h2>
+    <p>For questions about this policy, please open an issue on <a href="https://github.com/xtuaok/android_share_gyazo/issues">GitHub</a>.</p>
+  </section>
+</main>
+</body>
+</html>

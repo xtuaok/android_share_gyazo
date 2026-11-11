@@ -1,0 +1,19 @@
+// Static site for https://xtuaok.sickin.dev/ShareGyazo/ (privacy policy),
+// served by Cloudflare Workers static assets.
+// Deploy: `npx wrangler deploy` in this directory, or the GitHub Actions workflow.
+{
+  "name": "sharegyazo-site",
+  "compatibility_date": "2026-11-01",
+  "assets": {
+    "directory": "./public",
+    "html_handling": "auto-trailing-slash",
+    "not_found_handling": "none"
+  },
+  // Only /ShareGyazo* on the subdomain is handled here, so other paths on
+  // xtuaok.sickin.dev can be served by something else.
+  // Requires a proxied DNS record for xtuaok.sickin.dev in the sickin.dev zone.
+  "routes": [
+    { "pattern": "xtuaok.sickin.dev/ShareGyazo*", "zone_name": "sickin.dev" }
+  ],
+  "workers_dev": false
+}

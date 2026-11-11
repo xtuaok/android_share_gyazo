@@ -1,84 +1,82 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-
     <string name="app_name">ShareGyazo</string>
     <string name="title_activity_share_gyazo">ShareGyazo</string>
-    <string name="toast_copy_url">画像URLをコピーしました</string>
-    <string name="dialog_message_uploading">アップロード中&#8230;</string>
-    <string name="failed_to_upload">アップロードに失敗しました</string>
-    <string name="failed_to_upload_detail">ネットワーク設定を確認するか電池の最適化から除外してください</string>
-    <string name="message_uploaded">画像をアップロードしました</string>
-
     <string name="title_activity_preference">ShareGyazo設定</string>
 
     <string name="ok">OK</string>
     <string name="cancel">キャンセル</string>
-
-    <string name="category_behavior_url">アップロード後自動実行する動作</string>
-    <string name="copy_gyazo_url_title">画像のURLをコピー</string>
-    
-    <string name="copy_gyazo_url_summary">Gyazoから取得した画像URLをクリップボードにコピーする</string>
-    <string name="open_url_browser_summary">Gyazoから取得した画像URLをブラウザで開く</string>
-    <string name="share_url_text_summary">Gyazoから取得した画像URLをテキストとして共有する</string>
-
-    <string name="notifications">通知</string>
-    <string name="notification_action">通知タップアクション</string>
-
     <string name="none">なし</string>
-    <string name="open_url">画像のURLを開く</string>
-    <string name="share_url">画像のURLを共有</string>
-    <string name="copy_url">画像のURLをコピー</string>
+    <string name="back">戻る</string>
+
+    <!-- Upload -->
+    <string name="toast_copy_url">画像URLをコピーしました</string>
+    <string name="dialog_message_uploading">アップロード中&#8230;</string>
+    <string name="uploading_percent">アップロード中&#8230; %d%%</string>
+    <string name="convert_image">画像を変換中&#8230;</string>
+    <string name="continue_in_background">バックグラウンドで続行</string>
+    <string name="failed_to_upload">アップロードに失敗しました</string>
+    <string name="failed_to_upload_detail">ネットワークやサーバ設定を確認してください</string>
+    <string name="message_uploaded">画像をアップロードしました</string>
+    <string name="error_storage">画像を読み込めませんでした</string>
+    <string name="error_convert">画像を読み込めませんでした</string>
+    <string name="error_network">ネットワークエラー</string>
 
     <string name="open">開く</string>
     <string name="share">共有</string>
     <string name="copy">コピー</string>
+
+    <!-- Settings -->
+    <string name="category_behavior_url">アップロード後自動実行する動作</string>
+    <string name="copy_gyazo_url_title">画像のURLをコピー</string>
+    <string name="copy_gyazo_url_summary">取得した画像URLをクリップボードにコピーする</string>
+    <string name="open_url_browser_summary">取得した画像URLをブラウザで開く</string>
+    <string name="share_url_text_summary">取得した画像URLをテキストとして共有する</string>
+
+    <string name="notifications">通知</string>
+    <string name="notification_action">通知タップアクション</string>
+    <string name="notification_name_all">すべて</string>
+    <string name="notification_name_progress">アップロードの進捗</string>
+    <string name="notification_permission_denied_title">通知が許可されていません</string>
+    <string name="notification_permission_denied_summary">タップして通知を許可してください</string>
+
+    <string name="open_url">画像のURLを開く</string>
+    <string name="share_url">画像のURLを共有</string>
+    <string name="copy_url">画像のURLをコピー</string>
 
     <string name="pref_show_notification_title">通知を表示する</string>
     <string name="pref_show_notification_summary">アップロード中や完了時にステータスバーに通知する</string>
     <string name="pref_auto_close_notification_title">自動で通知を消去</string>
     <string name="pref_auto_close_notification_summary">タップしたら通知を消去する</string>
 
-    <string name="image_format">画像フォーマット</string>
-    <string name="image_quality">JPEG品質</string>
-
-    <string name="convert_image">画像を変換中&#8211;</string>
-
+    <string name="category_about">このアプリについて</string>
+    <string name="privacy_policy">プライバシーポリシー</string>
     <string name="opensource_license">オープンソースライセンス</string>
-
     <string name="share_app_summary">Copyright &#169; 2016 Tomonori Tamagawa.\nここをタップしてこのアプリを友人に紹介する</string>
     <string name="share_app_text">お手軽Gyazoアップロードアプリ ShareGyazo をPlay Storeからダウンロードしましょう！ https://play.google.com/store/apps/details?id=xtuaok.sharegyazo</string>
 
     <!-- Profile -->
-
     <string name="category_profiles">プロファイル</string>
     <string name="server_profiles">サーバプロファイル</string>
     <string name="default_profile">デフォルトプロファイル</string>
+    <string name="default_profile_none">なし（毎回選択）</string>
+    <string name="default_badge">デフォルト</string>
 
-    <!-- TODO: Remove or change this placeholder text -->
     <string name="profile_name_title">プロファイルの名前</string>
     <string name="profile_server_settings">サーバ設定</string>
     <string name="profile_image_settings">画像設定</string>
-    <string name="profile_setting_title">新規プロファイル</string>>
-    <string name="profile_list_title">プロファイル</string>>
+    <string name="profile_setting_title">新規プロファイル</string>
+    <string name="profile_list_title">プロファイル</string>
     <string name="profile_menu_delete_title">削除</string>
     <string name="profile_menu_save_title">保存</string>
 
-    <!-- Dialog UI -->
-    <string name="rename_dialog_title">名前変更</string>
-    <string name="rename_dialog_message">新しい名前を入力してください</string>
-    <string name="rename_dialog_hint">新しい名前</string>
-
+    <string name="rename_dialog_hint">プロファイル名</string>
     <string name="cgi_url_dialog_title">Gyazo CGI URL</string>
-    <string name="cgi_url_dialog_message">Gyazo CGIのURLを入力してください</string>
-    <string name="cgi_url_dialog_hint">https://upload.gyazo.com/upload.cgi</string>
-
+    <string name="cgi_url_invalid">http:// または https:// で始まるURLを入力してください</string>
     <string name="gyazo_id_dialog_title">Gyazo ID</string>
-    <string name="gyazo_id_dialog_message">GyazoIDを入力してください</string>
     <string name="gyazo_id_dialog_hint">わからなければ空のままに</string>
 
-    <string name="image_format_dialog_title">画像フォーマット</string>
-
-    <string name="image_quality_dialog_title">JPEG 画像品質</string>
+    <string name="image_format">画像フォーマット</string>
     <string name="image_quality_dialog_message">JPEG 画像品質: %d</string>
 
     <string name="remove_profile_title">プロファイルの削除</string>
@@ -87,15 +85,8 @@
     <string name="toast_remove_profile">プロファイルを削除しました</string>
     <string name="cannot_remove_profile">最後のプロファイルは削除できません</string>
 
-    <!-- profile chooser -->
+    <!-- Profile chooser -->
     <string name="select_profile">プロファイル選択</string>
     <string name="select_just_once">1回のみ</string>
     <string name="select_always">常時</string>
-
-    <!-- permission -->
-    <string name="requires_permission_message">ShareGyazo はストレージアクセスの権限が必要です</string>
-    <string name="update_permission">権限を更新</string>
-    <string name="please_grant_storage_permission">ストレージのアクセス権限を許可してください</string>
-
-    <string name="notification_name_all">すべて</string>
 </resources>
