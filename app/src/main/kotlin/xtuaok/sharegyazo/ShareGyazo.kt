@@ -75,8 +75,12 @@ class ShareGyazo : ComponentActivity() {
                             launchResult(s)
                             finish()
                         }
-                        ShareUiState.NeedsGyazoLogin -> {
-                            Toast.makeText(this@ShareGyazo, R.string.gyazo_login_required, Toast.LENGTH_LONG).show()
+                        is ShareUiState.NeedsLogin -> {
+                            Toast.makeText(
+                                this@ShareGyazo,
+                                getString(R.string.login_required, s.serviceName),
+                                Toast.LENGTH_LONG,
+                            ).show()
                             startActivity(Intent(this@ShareGyazo, GyazoPreference::class.java))
                             finish()
                         }

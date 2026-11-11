@@ -5,6 +5,7 @@ import androidx.core.content.edit
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import xtuaok.sharegyazo.auth.OAuthTokens
 
 /**
  * Stores server profiles in the same SharedPreferences keys as the legacy app.
@@ -27,8 +28,8 @@ class ProfileRepository(
         uuid?.takeIf { it.isNotEmpty() }?.let { id -> _profiles.value.firstOrNull { it.uuid == id } }
 
     /**
-     * Saves user edits. The destination of built-in profiles and the Gyazo login token
-     * cannot be changed here (see [setGyazoToken]).
+     * Saves user edits. The destination and login tokens of built-in profiles cannot be
+     * changed here (see [setTokens]).
      */
     @Synchronized
     fun save(profile: Profile) = update { list ->
@@ -38,7 +39,9 @@ class ProfileRepository(
                 profile.copy(
                     kind = existing.kind,
                     url = existing.url,
-                    bearerToken = if (existing.kind == ProfileKind.GYAZO) existing.bearerToken else profile.bearerToken,
+                    bearerToken = existing.bearerToken,
+                    refreshToken = existing.refreshToken,
+                    tokenExpiresAt = existing.tokenExpiresAt,
                 )
             } else {
                 profile.copy(kind = ProfileKind.CUSTOM)
@@ -49,10 +52,20 @@ class ProfileRepository(
         }
     }
 
-    /** Stores (or clears, with "") the OAuth access token of the built-in Gyazo profile. */
+    /** Stores (or clears, with null) the OAuth tokens of a built-in profile. */
     @Synchronized
-    fun setGyazoToken(token: String) = update(notify = false) { list ->
-        list.map { if (it.kind == ProfileKind.GYAZO) it.copy(bearerToken = token) else it }
+    fun setTokens(kind: ProfileKind, tokens: OAuthTokens?) = update(notify = false) { list ->
+        list.map {
+            if (it.kind == kind) {
+                it.copy(
+                    bearerToken = tokens?.accessToken.orEmpty(),
+                    refreshToken = tokens?.refreshToken.orEmpty(),
+                    tokenExpiresAt = tokens?.expiresAt ?: 0,
+                )
+            } else {
+                it
+            }
+        }
     }
 
     fun builtIn(kind: ProfileKind): Profile? = _profiles.value.firstOrNull { it.kind == kind }

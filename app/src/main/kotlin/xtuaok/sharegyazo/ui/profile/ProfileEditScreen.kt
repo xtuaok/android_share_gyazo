@@ -43,10 +43,12 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import xtuaok.sharegyazo.R
 import xtuaok.sharegyazo.app
-import xtuaok.sharegyazo.auth.GyazoLogin
+import xtuaok.sharegyazo.auth.AccountLogin
+import xtuaok.sharegyazo.auth.OAuthProvider
 import xtuaok.sharegyazo.data.Profile
 import xtuaok.sharegyazo.data.ProfileCodec
 import xtuaok.sharegyazo.data.ProfileKind
+import xtuaok.sharegyazo.data.ProfileTemplate
 import xtuaok.sharegyazo.ui.components.BackButton
 import xtuaok.sharegyazo.ui.components.PreferenceCategory
 import xtuaok.sharegyazo.ui.components.ResourceIconButton
@@ -54,18 +56,26 @@ import kotlin.math.roundToInt
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ProfileEditScreen(uuid: String?, onDone: () -> Unit) {
+fun ProfileEditScreen(
+    uuid: String?,
+    template: ProfileTemplate = ProfileTemplate.BLANK,
+    onDone: () -> Unit,
+) {
     val context = LocalContext.current
     val repo = context.app.profiles
     val original = remember(uuid) { repo.get(uuid) }
     val isNew = original == null
     val profiles by repo.profiles.collectAsStateWithLifecycle()
-    // Login state changes outside this screen (browser round trip), so read it live.
-    val gyazoLoggedIn = profiles.firstOrNull { it.kind == ProfileKind.GYAZO }?.isLoggedIn == true
 
+    val templateName = when (template) {
+        ProfileTemplate.GYAZO_ANONYMOUS -> stringResource(R.string.template_gyazo_anonymous)
+        ProfileTemplate.IMGUR_ANONYMOUS -> stringResource(R.string.template_imgur_anonymous)
+        ProfileTemplate.BLANK -> ""
+    }
     // Saved as JSON so edits survive configuration changes.
     var profileJson by rememberSaveable {
-        mutableStateOf(ProfileCodec.encode(original ?: Profile.newCustom()))
+        val initial = original ?: Profile.newCustom(template, name = templateName)
+        mutableStateOf(ProfileCodec.encode(initial))
     }
     val profile = ProfileCodec.decodeOrNull(profileJson) ?: return
     fun edit(transform: (Profile) -> Profile) {
@@ -123,36 +133,34 @@ fun ProfileEditScreen(uuid: String?, onDone: () -> Unit) {
             )
 
             PreferenceCategory(stringResource(R.string.profile_server_settings))
-            when (profile.kind) {
-                ProfileKind.GYAZO -> GyazoAccount(
-                    loggedIn = gyazoLoggedIn,
-                    onLogin = { GyazoLogin.start(context) },
-                    onLogout = { GyazoLogin.logout(context) },
+            val provider = OAuthProvider.of(profile.kind)
+            if (provider != null) {
+                // Login state changes outside this screen (browser round trip), so read it live.
+                val loggedIn = profiles.firstOrNull { it.kind == profile.kind }?.isLoggedIn == true
+                AccountSection(
+                    description = stringResource(
+                        if (provider == OAuthProvider.GYAZO) R.string.gyazo_destination else R.string.imgur_destination,
+                    ),
+                    serviceName = provider.displayName,
+                    loggedIn = loggedIn,
+                    onLogin = { AccountLogin.start(context, provider) },
+                    onLogout = { AccountLogin.logout(context, provider) },
                 )
-                ProfileKind.IMGUR -> {
-                    Text(stringResource(R.string.imgur_destination), style = MaterialTheme.typography.bodyMedium)
-                    TokenField(
-                        value = profile.bearerToken,
-                        label = stringResource(R.string.imgur_token_title),
-                        hint = stringResource(R.string.imgur_token_hint),
-                        isError = false,
-                        onValueChange = { token -> edit { it.copy(bearerToken = token) } },
-                    )
-                }
-                ProfileKind.CUSTOM -> {
-                    OutlinedTextField(
-                        value = profile.url,
-                        onValueChange = { url -> edit { it.copy(url = url) } },
-                        label = { Text(stringResource(R.string.cgi_url_dialog_title)) },
-                        placeholder = { Text(Profile.GYAZO_CGI_URL) },
-                        supportingText = if (!urlValid) {
-                            { Text(stringResource(R.string.cgi_url_invalid)) }
-                        } else null,
-                        isError = !urlValid,
-                        singleLine = true,
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri, imeAction = ImeAction.Next),
-                        modifier = Modifier.fillMaxWidth(),
-                    )
+            } else {
+                OutlinedTextField(
+                    value = profile.url,
+                    onValueChange = { url -> edit { it.copy(url = url) } },
+                    label = { Text(stringResource(R.string.cgi_url_dialog_title)) },
+                    placeholder = { Text(Profile.GYAZO_CGI_URL) },
+                    supportingText = if (!urlValid) {
+                        { Text(stringResource(R.string.cgi_url_invalid)) }
+                    } else null,
+                    isError = !urlValid,
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri, imeAction = ImeAction.Next),
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                if (!profile.isImgurAnonymous) {
                     OutlinedTextField(
                         value = profile.gyazoId,
                         onValueChange = { id -> edit { it.copy(gyazoId = id.trim()) } },
@@ -161,17 +169,17 @@ fun ProfileEditScreen(uuid: String?, onDone: () -> Unit) {
                         singleLine = true,
                         modifier = Modifier.fillMaxWidth(),
                     )
-                    val insecureToken = Profile.isInsecureForToken(profile.url, profile.bearerToken)
-                    TokenField(
-                        value = profile.bearerToken,
-                        label = stringResource(R.string.bearer_token_title),
-                        hint = stringResource(
-                            if (insecureToken) R.string.bearer_token_insecure else R.string.bearer_token_hint,
-                        ),
-                        isError = insecureToken,
-                        onValueChange = { token -> edit { it.copy(bearerToken = token) } },
-                    )
                 }
+                val insecureToken = Profile.isInsecureForToken(profile.url, profile.bearerToken)
+                TokenField(
+                    value = profile.bearerToken,
+                    label = stringResource(R.string.bearer_token_title),
+                    hint = stringResource(
+                        if (insecureToken) R.string.bearer_token_insecure else R.string.bearer_token_hint,
+                    ),
+                    isError = insecureToken,
+                    onValueChange = { token -> edit { it.copy(bearerToken = token) } },
+                )
             }
 
             PreferenceCategory(stringResource(R.string.profile_image_settings))
@@ -223,22 +231,28 @@ fun ProfileEditScreen(uuid: String?, onDone: () -> Unit) {
 }
 
 @Composable
-private fun GyazoAccount(loggedIn: Boolean, onLogin: () -> Unit, onLogout: () -> Unit) {
-    Text(stringResource(R.string.gyazo_destination), style = MaterialTheme.typography.bodyMedium)
+private fun AccountSection(
+    description: String,
+    serviceName: String,
+    loggedIn: Boolean,
+    onLogin: () -> Unit,
+    onLogout: () -> Unit,
+) {
+    Text(description, style = MaterialTheme.typography.bodyMedium)
     Row(
         Modifier.fillMaxWidth().padding(vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(
-            stringResource(if (loggedIn) R.string.gyazo_logged_in else R.string.gyazo_not_logged_in),
+            stringResource(if (loggedIn) R.string.logged_in else R.string.not_logged_in),
             style = MaterialTheme.typography.bodyLarge,
             color = if (loggedIn) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error,
             modifier = Modifier.weight(1f),
         )
         if (loggedIn) {
-            OutlinedButton(onClick = onLogout) { Text(stringResource(R.string.gyazo_logout)) }
+            OutlinedButton(onClick = onLogout) { Text(stringResource(R.string.logout)) }
         } else {
-            Button(onClick = onLogin) { Text(stringResource(R.string.gyazo_login)) }
+            Button(onClick = onLogin) { Text(stringResource(R.string.login_to, serviceName)) }
         }
     }
 }

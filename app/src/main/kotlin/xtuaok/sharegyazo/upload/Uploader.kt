@@ -16,6 +16,7 @@ import okio.Buffer
 import okio.BufferedSink
 import okio.ForwardingSink
 import okio.buffer
+import xtuaok.sharegyazo.auth.OAuthProvider
 import xtuaok.sharegyazo.data.Profile
 import xtuaok.sharegyazo.data.ProfileKind
 import java.io.File
@@ -33,7 +34,7 @@ data class UploadEndpoint(val url: String, val type: Type) {
         /** gyazo.com official API: Bearer token, multipart `imagedata`, JSON response. */
         GYAZO_API,
 
-        /** imgur API: Client-ID (or Bearer), multipart `image`, JSON response. */
+        /** imgur API: Bearer (login) or Client-ID (anonymous), multipart `image`, JSON response. */
         IMGUR,
     }
 
@@ -42,8 +43,10 @@ data class UploadEndpoint(val url: String, val type: Type) {
 
         fun forProfile(profile: Profile): UploadEndpoint = when (profile.kind) {
             ProfileKind.GYAZO -> UploadEndpoint(Profile.GYAZO_API_URL, Type.GYAZO_API)
-            ProfileKind.IMGUR -> UploadEndpoint(IMGUR_UPLOAD, Type.IMGUR)
-            ProfileKind.CUSTOM -> UploadEndpoint(profile.url, Type.CGI)
+            ProfileKind.IMGUR -> UploadEndpoint(Profile.IMGUR_API_URL, Type.IMGUR)
+            ProfileKind.CUSTOM ->
+                if (profile.isImgurAnonymous) UploadEndpoint(IMGUR_UPLOAD, Type.IMGUR)
+                else UploadEndpoint(profile.url, Type.CGI)
         }
     }
 }
@@ -92,7 +95,7 @@ object UploadProtocol {
 
 class Uploader(
     private val client: OkHttpClient = defaultClient,
-    private val imgurClientId: String = IMGUR_CLIENT_ID,
+    private val imgurClientId: String = OAuthProvider.IMGUR.clientId,
 ) {
     /**
      * Posts [file] synchronously.
@@ -142,8 +145,6 @@ class Uploader(
     }
 
     companion object {
-        private const val IMGUR_CLIENT_ID = "de242da82e84888"
-
         private val defaultClient: OkHttpClient by lazy {
             OkHttpClient.Builder()
                 .connectTimeout(15, TimeUnit.SECONDS)

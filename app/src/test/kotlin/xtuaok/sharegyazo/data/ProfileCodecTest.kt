@@ -68,14 +68,20 @@ class ProfileCodecTest {
     }
 
     @Test
-    fun legacyImgurProfileBecomesBuiltInKeepingUuid() {
+    fun legacyImgurProfileStaysAnonymousCustom() {
         val legacy = Profile(uuid = "u2", name = "my imgur", url = "https://api.imgur.com/", useCount = 3)
         val list = Profile.withBuiltIns(listOf(legacy))
-        assertEquals(2, list.size)
-        val imgur = list.single { it.kind == ProfileKind.IMGUR }
-        assertEquals("u2", imgur.uuid)
-        assertEquals("my imgur", imgur.name)
-        assertEquals(3, imgur.useCount)
+        assertEquals(listOf(ProfileKind.GYAZO, ProfileKind.IMGUR, ProfileKind.CUSTOM), list.map { it.kind })
+        assertEquals(legacy, list[2])
+        assertTrue(list[2].isImgurAnonymous)
+        assertTrue(!list[1].isImgurAnonymous)
+    }
+
+    @Test
+    fun templates() {
+        assertEquals(Profile.GYAZO_CGI_URL, Profile.newCustom(ProfileTemplate.GYAZO_ANONYMOUS).url)
+        assertTrue(Profile.newCustom(ProfileTemplate.IMGUR_ANONYMOUS).isImgurAnonymous)
+        assertEquals(ProfileKind.CUSTOM, Profile.newCustom(ProfileTemplate.IMGUR_ANONYMOUS).kind)
     }
 
     @Test
@@ -87,8 +93,8 @@ class ProfileCodecTest {
 
     @Test
     fun kindSurvivesRoundTrip() {
-        val gyazo = Profile.builtIn(ProfileKind.GYAZO).copy(bearerToken = "t")
-        assertEquals(gyazo, ProfileCodec.decodeOrNull(ProfileCodec.encode(gyazo)))
+        val imgur = Profile.builtIn(ProfileKind.IMGUR).copy(bearerToken = "t", refreshToken = "r", tokenExpiresAt = 42)
+        assertEquals(imgur, ProfileCodec.decodeOrNull(ProfileCodec.encode(imgur)))
         // Legacy JSON has no "kind": treated as a custom profile.
         assertEquals(ProfileKind.CUSTOM, ProfileCodec.decodeList(legacyJson)[0].kind)
     }

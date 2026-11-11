@@ -40,7 +40,7 @@ class UploadProtocolTest {
 
     @Test
     fun imgurEndpointAndResponse() {
-        val imgur = UploadEndpoint.forProfile(Profile.builtIn(ProfileKind.IMGUR))
+        val imgur = UploadEndpoint.forProfile(Profile(name = "anon", url = "https://api.imgur.com/"))
         assertEquals(UploadEndpoint.Type.IMGUR, imgur.type)
         assertEquals(UploadEndpoint.IMGUR_UPLOAD, imgur.url)
         assertEquals(
@@ -55,6 +55,10 @@ class UploadProtocolTest {
         assertEquals(
             UploadEndpoint(Profile.GYAZO_API_URL, UploadEndpoint.Type.GYAZO_API),
             UploadEndpoint.forProfile(Profile.builtIn(ProfileKind.GYAZO)),
+        )
+        assertEquals(
+            UploadEndpoint(Profile.IMGUR_API_URL, UploadEndpoint.Type.IMGUR),
+            UploadEndpoint.forProfile(Profile.builtIn(ProfileKind.IMGUR)),
         )
         assertEquals(
             UploadEndpoint("https://example.com/up.cgi", UploadEndpoint.Type.CGI),

@@ -18,6 +18,9 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import xtuaok.sharegyazo.R
 import xtuaok.sharegyazo.app
+import xtuaok.sharegyazo.auth.AccountLogin
+import xtuaok.sharegyazo.auth.OAuthProvider
+import xtuaok.sharegyazo.auth.OAuthRejectedException
 import xtuaok.sharegyazo.data.Profile
 import xtuaok.sharegyazo.data.ProfileCodec
 import java.io.File
@@ -60,13 +63,19 @@ class UploadWorker(context: Context, params: WorkerParameters) : CoroutineWorker
 
             try {
                 val endpoint = UploadEndpoint.forProfile(profile)
-                if (endpoint.type == UploadEndpoint.Type.GYAZO_API && !profile.isLoggedIn) {
-                    return fail(ctx.getString(R.string.gyazo_login_required))
+                val provider = OAuthProvider.of(profile.kind)
+                if (provider != null && !profile.isLoggedIn) {
+                    return fail(ctx.getString(R.string.login_required, provider.displayName))
                 }
                 val response = try {
                     withContext(Dispatchers.IO) {
+                        val current = try {
+                            AccountLogin.ensureFresh(ctx, profile)
+                        } catch (e: OAuthRejectedException) {
+                            return@withContext null
+                        }
                         Uploader().upload(
-                            endpoint, converted.file, converted.mimeType, profile.gyazoId, profile.bearerToken,
+                            endpoint, converted.file, converted.mimeType, current.gyazoId, current.bearerToken,
                         ) { percent ->
                             setProgressAsync(workDataOf(KEY_PROGRESS to percent))
                             if (settings.showNotification) {
@@ -83,6 +92,9 @@ class UploadWorker(context: Context, params: WorkerParameters) : CoroutineWorker
                     return fail("${ctx.getString(R.string.error_network)}: ${e.message}", e)
                 }
 
+                if (response == null) {
+                    return fail(ctx.getString(R.string.login_required, provider?.displayName.orEmpty()))
+                }
                 if (endpoint.type == UploadEndpoint.Type.CGI) {
                     response.gyazoId?.let { ctx.app.profiles.updateGyazoId(profile.uuid, it) }
                 }

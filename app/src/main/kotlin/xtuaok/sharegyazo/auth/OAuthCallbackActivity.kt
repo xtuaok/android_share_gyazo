@@ -9,19 +9,21 @@ import kotlinx.coroutines.launch
 import xtuaok.sharegyazo.GyazoPreference
 import xtuaok.sharegyazo.R
 
-/** Receives `sharegyazo://oauth/gyazo?...` from the login relay and finishes the login. */
+/** Receives `sharegyazo://oauth/<provider>?...` from the login relay and finishes the login. */
 class OAuthCallbackActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         val uri = intent?.data
-        if (savedInstanceState != null || !GyazoLogin.isCallback(uri)) {
+        if (savedInstanceState != null || AccountLogin.providerOf(uri) == null) {
             finish()
             return
         }
         lifecycleScope.launch {
-            when (val result = GyazoLogin.complete(applicationContext, uri!!)) {
-                GyazoLogin.Result.Success -> toast(getString(R.string.gyazo_login_succeeded))
-                is GyazoLogin.Result.Failure -> toast(getString(R.string.gyazo_login_failed, result.message))
+            val result = AccountLogin.complete(applicationContext, uri!!)
+            val name = result.provider?.displayName.orEmpty()
+            when (result) {
+                is AccountLogin.Result.Success -> toast(getString(R.string.login_succeeded, name))
+                is AccountLogin.Result.Failure -> toast(getString(R.string.login_failed, name, result.message))
             }
             // Back to the settings screen the login was started from.
             startActivity(

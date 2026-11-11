@@ -49,7 +49,7 @@
             </intent-filter>
         </activity>
 
-        <!-- Gyazo login: the relay sends the browser back to sharegyazo://oauth/gyazo -->
+        <!-- Login: the relay sends the browser back to sharegyazo://oauth/{gyazo,imgur} -->
         <activity
             android:name=".auth.OAuthCallbackActivity"
             android:excludeFromRecents="true"
@@ -60,10 +60,10 @@
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
-                <data
-                    android:host="oauth"
-                    android:path="/gyazo"
-                    android:scheme="sharegyazo" />
+                <data android:scheme="sharegyazo" />
+                <data android:host="oauth" />
+                <data android:path="/gyazo" />
+                <data android:path="/imgur" />
             </intent-filter>
         </activity>
 
