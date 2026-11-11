@@ -62,7 +62,9 @@ export default {
 };
 
 // Parameters handed to the app: from the query (code flow) or the fragment (token flow).
-export const CALLBACK_KEYS = ["code", "state", "error", "access_token", "refresh_token", "expires_in"];
+export const CALLBACK_KEYS = [
+  "code", "state", "error", "access_token", "refresh_token", "expires_in", "account_username",
+];
 
 /**
  * The service redirects here after login. The page forwards the result to the app with an

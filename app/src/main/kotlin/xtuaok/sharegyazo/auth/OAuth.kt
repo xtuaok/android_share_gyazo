@@ -90,9 +90,15 @@ private const val RELAY = "https://xtuaok.sickin.dev/ShareGyazo/oauth"
 data class LoginRequest(val verifier: String, val state: String, val authorizeUrl: String)
 
 /** [expiresAt] is epoch millis, 0 when the token does not expire. */
-data class OAuthTokens(val accessToken: String, val refreshToken: String = "", val expiresAt: Long = 0) {
+data class OAuthTokens(
+    val accessToken: String,
+    val refreshToken: String = "",
+    val expiresAt: Long = 0,
+    /** Empty when the service does not tell (Gyazo, token refresh). */
+    val accountName: String = "",
+) {
     companion object {
-        /** Tokens from the token flow callback (`access_token`, `refresh_token`, `expires_in`). */
+        /** Tokens from the token flow callback (`access_token`, `refresh_token`, `expires_in`, `account_username`). */
         fun fromCallback(param: (String) -> String?, now: Long = System.currentTimeMillis()): OAuthTokens? {
             val access = param("access_token")?.takeIf { it.isNotBlank() } ?: return null
             val expiresIn = param("expires_in")?.toLongOrNull()
@@ -100,6 +106,7 @@ data class OAuthTokens(val accessToken: String, val refreshToken: String = "", v
                 accessToken = access,
                 refreshToken = param("refresh_token").orEmpty(),
                 expiresAt = expiresIn?.let { now + it * 1000 } ?: 0,
+                accountName = param("account_username").orEmpty(),
             )
         }
     }

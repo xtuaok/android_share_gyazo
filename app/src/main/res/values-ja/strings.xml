@@ -80,6 +80,7 @@
     <string name="bearer_token_insecure">URL が http:// のため、トークンが暗号化されずに送信されます。https:// を使ってください</string>
     <string name="show">表示</string>
     <string name="logged_in">ログイン済み</string>
+    <string name="logged_in_as">ログイン済み（%s）</string>
     <string name="not_logged_in">未ログイン</string>
     <string name="login_to">%s にログイン</string>
     <string name="logout">ログアウト</string>
@@ -87,6 +88,8 @@
     <string name="login_failed">%1$s へのログインに失敗しました: %2$s</string>
     <string name="login_required">先に設定画面で %s にログインしてください</string>
     <string name="imgur_destination">imgur の API で、ログインしたアカウントにアップロードします</string>
+    <string name="imgur_social_login_hint">Google や Apple のアカウントで imgur を使っている場合は、先に下のボタンからブラウザで imgur にログインし、その後「imgur にログイン」を押してください。imgur の連携画面からは、これらのアカウントでログインできません。</string>
+    <string name="imgur_open_sign_in">ブラウザで imgur にログイン</string>
     <string name="imgur_anonymous_summary">imgur・匿名アップロード</string>
     <string name="template_imgur_anonymous">imgur（匿名）</string>
     <string name="template_imgur_anonymous_summary">ログインせずに imgur にアップロードします（以前のバージョンと同じ）</string>

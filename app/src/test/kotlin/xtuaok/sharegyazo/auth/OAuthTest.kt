@@ -60,8 +60,13 @@ class OAuthProviderTest {
 
     @Test
     fun tokensFromImgurCallback() {
-        val params = mapOf("access_token" to "a", "refresh_token" to "r", "expires_in" to "2419200")
-        assertEquals(OAuthTokens("a", "r", 1_000L + 2_419_200_000L), OAuthTokens.fromCallback(params::get, now = 1_000L))
+        val params = mapOf(
+            "access_token" to "a", "refresh_token" to "r", "expires_in" to "2419200", "account_username" to "taro",
+        )
+        assertEquals(
+            OAuthTokens("a", "r", 1_000L + 2_419_200_000L, "taro"),
+            OAuthTokens.fromCallback(params::get, now = 1_000L),
+        )
         assertEquals(OAuthTokens("a"), OAuthTokens.fromCallback(mapOf("access_token" to "a")::get))
         assertEquals(null, OAuthTokens.fromCallback(mapOf("refresh_token" to "r")::get))
     }

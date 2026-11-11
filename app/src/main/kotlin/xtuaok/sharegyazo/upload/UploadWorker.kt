@@ -102,7 +102,8 @@ class UploadWorker(context: Context, params: WorkerParameters) : CoroutineWorker
                 val url = UploadProtocol.resolveImageUrl(endpoint, response.body, profile.format)
                 if (!response.isSuccessful || url == null) {
                     Log.w(TAG, "Unexpected response ${response.code}: ${response.body}")
-                    return fail("HTTP ${response.code}")
+                    val detail = UploadProtocol.errorSummary(response.body)
+                    return fail(if (detail.isEmpty()) "HTTP ${response.code}" else "HTTP ${response.code}: $detail")
                 }
 
                 if (settings.copyUrl) {

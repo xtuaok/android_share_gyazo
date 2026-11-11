@@ -3,6 +3,8 @@ package xtuaok.sharegyazo.upload
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import okhttp3.MediaType
@@ -87,6 +89,24 @@ object UploadProtocol {
     }
 
     private const val GYAZO_PAGE = "https://gyazo.com/"
+    private const val ERROR_SUMMARY_MAX = 120
+
+    /**
+     * A short, single-line description of an error response for the failure notification:
+     * the `error` / `message` field of a JSON body, otherwise the text without HTML tags.
+     */
+    fun errorSummary(body: String): String {
+        val fromJson = runCatching {
+            val obj = Json.parseToJsonElement(body).jsonObject
+            val data = obj["data"] as? JsonObject
+            listOfNotNull(obj["error"], obj["message"], data?.get("error"))
+                .firstNotNullOfOrNull { (it as? JsonPrimitive)?.contentOrNull }
+        }.getOrNull()
+        val text = (fromJson ?: body.replace(Regex("<[^>]*>"), " "))
+            .replace(Regex("\\s+"), " ")
+            .trim()
+        return if (text.length > ERROR_SUMMARY_MAX) text.take(ERROR_SUMMARY_MAX - 1) + "…" else text
+    }
 
     private fun jsonString(body: String, pick: (JsonObject) -> JsonElement?): String? = runCatching {
         pick(Json.parseToJsonElement(body).jsonObject)?.jsonPrimitive?.content

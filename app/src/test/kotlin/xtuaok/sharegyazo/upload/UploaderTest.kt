@@ -79,6 +79,19 @@ class UploadProtocolTest {
     }
 
     @Test
+    fun errorSummaryForNotifications() {
+        assertEquals("No file uploaded", UploadProtocol.errorSummary("No file uploaded\n"))
+        assertEquals("invalid_grant", UploadProtocol.errorSummary("""{"error":"invalid_grant"}"""))
+        assertEquals("Unauthorized", UploadProtocol.errorSummary("""{"message":"Unauthorized"}"""))
+        assertEquals("Bad Request", UploadProtocol.errorSummary("""{"data":{"error":"Bad Request"},"status":400}"""))
+        assertEquals("413 Request Entity Too Large", UploadProtocol.errorSummary("<html><h1>413 Request Entity Too Large</h1></html>"))
+        assertEquals("", UploadProtocol.errorSummary(""))
+        val long = UploadProtocol.errorSummary("x".repeat(500))
+        assertEquals(120, long.length)
+        assertTrue(long.endsWith("…"))
+    }
+
+    @Test
     fun targetSizeFitsWithinMax() {
         assertEquals(1920 to 1080, UploadProtocol.targetSize(3840, 2160))
         assertEquals(1080 to 1920, UploadProtocol.targetSize(1440, 2560))

@@ -80,6 +80,7 @@
     <string name="bearer_token_insecure">The URL uses http://, so the token is sent unencrypted. Use https://.</string>
     <string name="show">Show</string>
     <string name="logged_in">Logged in</string>
+    <string name="logged_in_as">Logged in (%s)</string>
     <string name="not_logged_in">Not logged in</string>
     <string name="login_to">Log in to %s</string>
     <string name="logout">Log out</string>
@@ -87,6 +88,8 @@
     <string name="login_failed">%1$s login failed: %2$s</string>
     <string name="login_required">Log in to %s in the settings first.</string>
     <string name="imgur_destination">Uploads to your imgur account with the imgur API.</string>
+    <string name="imgur_social_login_hint">If you use imgur with a Google or Apple account, first sign in to imgur in the browser with the button below, then tap \"Log in to imgur\". imgur\'s app authorization page cannot sign in with these accounts.</string>
+    <string name="imgur_open_sign_in">Sign in to imgur in the browser</string>
     <string name="imgur_anonymous_summary">imgur, anonymous upload</string>
     <string name="template_imgur_anonymous">imgur (anonymous)</string>
     <string name="template_imgur_anonymous_summary">Upload to imgur without logging in (as in earlier versions).</string>
