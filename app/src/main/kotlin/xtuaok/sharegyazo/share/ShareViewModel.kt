@@ -22,6 +22,7 @@ import kotlinx.coroutines.withContext
 import xtuaok.sharegyazo.R
 import xtuaok.sharegyazo.app
 import xtuaok.sharegyazo.data.Profile
+import xtuaok.sharegyazo.data.ProfileKind
 import xtuaok.sharegyazo.upload.UploadWorker
 import java.io.File
 import java.util.UUID
@@ -32,6 +33,8 @@ sealed interface ShareUiState {
     /** Waiting for the upload because a browser or share sheet must be opened afterwards. */
     data class Uploading(val percent: Int?) : ShareUiState
     data class Completed(val url: String, val openBrowser: Boolean) : ShareUiState
+    /** The built-in Gyazo profile was chosen but the user has not logged in yet. */
+    data object NeedsGyazoLogin : ShareUiState
     data object Finished : ShareUiState
 }
 
@@ -78,6 +81,10 @@ class ShareViewModel(application: Application) : AndroidViewModel(application) {
 
     private fun upload(profile: Profile) {
         val uri = source ?: return finish()
+        if (profile.kind == ProfileKind.GYAZO && !profile.isLoggedIn) {
+            _state.value = ShareUiState.NeedsGyazoLogin
+            return
+        }
         val settings = app.settings.settings.value
         _state.value = if (settings.needsForegroundAction) ShareUiState.Uploading(null) else ShareUiState.Idle
 

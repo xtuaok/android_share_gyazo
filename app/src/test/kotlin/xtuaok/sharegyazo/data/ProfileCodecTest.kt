@@ -17,11 +17,26 @@ class ProfileCodecTest {
         val profiles = ProfileCodec.decodeList(legacyJson)
         assertEquals(2, profiles.size)
         assertEquals(
-            Profile("8d3c0f6e-1111-2222-3333-444455556666", "Gyazo", Profile.GYAZO_URL, "abc123", "jpg", 80, 12),
+            Profile("8d3c0f6e-1111-2222-3333-444455556666", "Gyazo", Profile.GYAZO_CGI_URL, "abc123", "jpg", 80, 12),
             profiles[0],
         )
         // Gson omits null fields; missing mGyazoId falls back to empty.
         assertEquals("", profiles[1].gyazoId)
+        // Profiles saved before bearer auth existed have no token.
+        assertEquals("", profiles[0].bearerToken)
+    }
+
+    @Test
+    fun bearerTokenRoundTrip() {
+        val profile = Profile(name = "own", url = "https://example.com/upload", bearerToken = "tok")
+        assertEquals("tok", ProfileCodec.decodeOrNull(ProfileCodec.encode(profile))!!.bearerToken)
+    }
+
+    @Test
+    fun tokenOverHttpIsInsecure() {
+        assertTrue(Profile.isInsecureForToken("http://example.com/upload", "tok"))
+        assertEquals(false, Profile.isInsecureForToken("https://example.com/upload", "tok"))
+        assertEquals(false, Profile.isInsecureForToken("http://example.com/upload", ""))
     }
 
     @Test
@@ -44,9 +59,37 @@ class ProfileCodecTest {
     }
 
     @Test
-    fun presetUrls() {
-        assertEquals(Profile.IMGUR_URL, Profile.presetUrlFor(" Imgur "))
-        assertEquals(Profile.GYAZO_URL, Profile.presetUrlFor("GYAZO"))
-        assertEquals(null, Profile.presetUrlFor("my server"))
+    fun builtInsAreAddedFirstForLegacyData() {
+        val custom = Profile(name = "own", url = "https://example.com/upload.cgi")
+        val list = Profile.withBuiltIns(listOf(custom))
+        assertEquals(listOf(ProfileKind.GYAZO, ProfileKind.IMGUR, ProfileKind.CUSTOM), list.map { it.kind })
+        assertEquals(Profile.GYAZO_API_URL, list[0].url)
+        assertEquals(custom, list[2])
+    }
+
+    @Test
+    fun legacyImgurProfileBecomesBuiltInKeepingUuid() {
+        val legacy = Profile(uuid = "u2", name = "my imgur", url = "https://api.imgur.com/", useCount = 3)
+        val list = Profile.withBuiltIns(listOf(legacy))
+        assertEquals(2, list.size)
+        val imgur = list.single { it.kind == ProfileKind.IMGUR }
+        assertEquals("u2", imgur.uuid)
+        assertEquals("my imgur", imgur.name)
+        assertEquals(3, imgur.useCount)
+    }
+
+    @Test
+    fun builtInsAreNotDuplicated() {
+        val once = Profile.withBuiltIns(emptyList())
+        assertEquals(once, Profile.withBuiltIns(once))
+        assertEquals(2, once.size)
+    }
+
+    @Test
+    fun kindSurvivesRoundTrip() {
+        val gyazo = Profile.builtIn(ProfileKind.GYAZO).copy(bearerToken = "t")
+        assertEquals(gyazo, ProfileCodec.decodeOrNull(ProfileCodec.encode(gyazo)))
+        // Legacy JSON has no "kind": treated as a custom profile.
+        assertEquals(ProfileKind.CUSTOM, ProfileCodec.decodeList(legacyJson)[0].kind)
     }
 }

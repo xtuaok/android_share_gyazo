@@ -59,10 +59,15 @@ class UploadWorker(context: Context, params: WorkerParameters) : CoroutineWorker
             }
 
             try {
-                val endpoint = UploadEndpoint.forProfileUrl(profile.url)
+                val endpoint = UploadEndpoint.forProfile(profile)
+                if (endpoint.type == UploadEndpoint.Type.GYAZO_API && !profile.isLoggedIn) {
+                    return fail(ctx.getString(R.string.gyazo_login_required))
+                }
                 val response = try {
                     withContext(Dispatchers.IO) {
-                        Uploader().upload(endpoint, converted.file, converted.mimeType, profile.gyazoId) { percent ->
+                        Uploader().upload(
+                            endpoint, converted.file, converted.mimeType, profile.gyazoId, profile.bearerToken,
+                        ) { percent ->
                             setProgressAsync(workDataOf(KEY_PROGRESS to percent))
                             if (settings.showNotification) {
                                 Notifications.notify(ctx, foregroundId, Notifications.progress(ctx, percent))
@@ -78,7 +83,9 @@ class UploadWorker(context: Context, params: WorkerParameters) : CoroutineWorker
                     return fail("${ctx.getString(R.string.error_network)}: ${e.message}", e)
                 }
 
-                response.gyazoId?.let { ctx.app.profiles.updateGyazoId(profile.uuid, it) }
+                if (endpoint.type == UploadEndpoint.Type.CGI) {
+                    response.gyazoId?.let { ctx.app.profiles.updateGyazoId(profile.uuid, it) }
+                }
 
                 val url = UploadProtocol.resolveImageUrl(endpoint, response.body, profile.format)
                 if (!response.isSuccessful || url == null) {

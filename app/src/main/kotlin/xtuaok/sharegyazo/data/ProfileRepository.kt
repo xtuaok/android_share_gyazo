@@ -26,19 +26,41 @@ class ProfileRepository(
     fun get(uuid: String?): Profile? =
         uuid?.takeIf { it.isNotEmpty() }?.let { id -> _profiles.value.firstOrNull { it.uuid == id } }
 
+    /**
+     * Saves user edits. The destination of built-in profiles and the Gyazo login token
+     * cannot be changed here (see [setGyazoToken]).
+     */
     @Synchronized
     fun save(profile: Profile) = update { list ->
-        if (list.any { it.uuid == profile.uuid }) {
-            list.map { if (it.uuid == profile.uuid) profile else it }
+        val existing = list.firstOrNull { it.uuid == profile.uuid }
+        if (existing != null) {
+            val merged = if (existing.isBuiltIn) {
+                profile.copy(
+                    kind = existing.kind,
+                    url = existing.url,
+                    bearerToken = if (existing.kind == ProfileKind.GYAZO) existing.bearerToken else profile.bearerToken,
+                )
+            } else {
+                profile.copy(kind = ProfileKind.CUSTOM)
+            }
+            list.map { if (it.uuid == profile.uuid) merged else it }
         } else {
-            list + profile
+            list + profile.copy(kind = ProfileKind.CUSTOM)
         }
     }
 
-    /** @return false if [uuid] is the last remaining profile. */
+    /** Stores (or clears, with "") the OAuth access token of the built-in Gyazo profile. */
+    @Synchronized
+    fun setGyazoToken(token: String) = update(notify = false) { list ->
+        list.map { if (it.kind == ProfileKind.GYAZO) it.copy(bearerToken = token) else it }
+    }
+
+    fun builtIn(kind: ProfileKind): Profile? = _profiles.value.firstOrNull { it.kind == kind }
+
+    /** @return false if [uuid] is a built-in profile, which cannot be removed. */
     @Synchronized
     fun remove(uuid: String): Boolean {
-        if (_profiles.value.size <= 1) return false
+        if (get(uuid)?.isBuiltIn != false) return false
         update { list -> list.filterNot { it.uuid == uuid } }
         if (_defaultUuid.value == uuid) setDefault("")
         return true
@@ -78,8 +100,10 @@ class ProfileRepository(
             ?.takeIf { it.isNotEmpty() }
             ?.let(ProfileCodec::decodeList)
             .orEmpty()
-        if (stored.isNotEmpty()) return stored
-        return listOf(migrateLegacySettings()).also(::persist)
+        val base = stored.ifEmpty { listOfNotNull(migrateLegacySettings()) }
+        val list = Profile.withBuiltIns(base)
+        if (list != stored) persist(list)
+        return list
     }
 
     private fun loadDefaultUuid(): String {
@@ -88,8 +112,8 @@ class ProfileRepository(
     }
 
     /** Settings from before profiles existed (v1.x). */
-    private fun migrateLegacySettings(): Profile {
-        val url = prefs.getString(LEGACY_CGI_URL, null) ?: return Profile.newGyazo()
+    private fun migrateLegacySettings(): Profile? {
+        val url = prefs.getString(LEGACY_CGI_URL, null) ?: return null
         val format = prefs.getString(LEGACY_IMAGE_FORMAT, "0")?.toIntOrNull() ?: 0
         return Profile(
             name = "migrated",

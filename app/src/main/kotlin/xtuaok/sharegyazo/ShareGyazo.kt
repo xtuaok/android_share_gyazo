@@ -2,8 +2,10 @@ package xtuaok.sharegyazo
 
 import android.Manifest
 import android.content.ActivityNotFoundException
+import android.content.Intent
 import android.os.Build
 import android.os.Bundle
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
@@ -71,6 +73,11 @@ class ShareGyazo : ComponentActivity() {
                     when (val s = state) {
                         is ShareUiState.Completed -> {
                             launchResult(s)
+                            finish()
+                        }
+                        ShareUiState.NeedsGyazoLogin -> {
+                            Toast.makeText(this@ShareGyazo, R.string.gyazo_login_required, Toast.LENGTH_LONG).show()
+                            startActivity(Intent(this@ShareGyazo, GyazoPreference::class.java))
                             finish()
                         }
                         ShareUiState.Finished -> finish()

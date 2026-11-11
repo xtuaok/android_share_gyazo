@@ -10,7 +10,10 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.layout.Row
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
@@ -28,17 +31,22 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import xtuaok.sharegyazo.R
 import xtuaok.sharegyazo.app
+import xtuaok.sharegyazo.auth.GyazoLogin
 import xtuaok.sharegyazo.data.Profile
 import xtuaok.sharegyazo.data.ProfileCodec
+import xtuaok.sharegyazo.data.ProfileKind
 import xtuaok.sharegyazo.ui.components.BackButton
 import xtuaok.sharegyazo.ui.components.PreferenceCategory
 import xtuaok.sharegyazo.ui.components.ResourceIconButton
@@ -52,10 +60,12 @@ fun ProfileEditScreen(uuid: String?, onDone: () -> Unit) {
     val original = remember(uuid) { repo.get(uuid) }
     val isNew = original == null
     val profiles by repo.profiles.collectAsStateWithLifecycle()
+    // Login state changes outside this screen (browser round trip), so read it live.
+    val gyazoLoggedIn = profiles.firstOrNull { it.kind == ProfileKind.GYAZO }?.isLoggedIn == true
 
     // Saved as JSON so edits survive configuration changes.
     var profileJson by rememberSaveable {
-        mutableStateOf(ProfileCodec.encode(original ?: Profile.newGyazo("gyazo")))
+        mutableStateOf(ProfileCodec.encode(original ?: Profile.newCustom()))
     }
     val profile = ProfileCodec.decodeOrNull(profileJson) ?: return
     fun edit(transform: (Profile) -> Profile) {
@@ -64,7 +74,7 @@ fun ProfileEditScreen(uuid: String?, onDone: () -> Unit) {
 
     var confirmRemove by rememberSaveable { mutableStateOf(false) }
     val nameValid = profile.name.isNotBlank()
-    val urlValid = Profile.isValidUrl(profile.url)
+    val urlValid = profile.isBuiltIn || Profile.isValidUrl(profile.url)
 
     Scaffold(
         topBar = {
@@ -72,7 +82,7 @@ fun ProfileEditScreen(uuid: String?, onDone: () -> Unit) {
                 title = { Text(if (isNew) stringResource(R.string.profile_setting_title) else original.name) },
                 navigationIcon = { BackButton(onDone) },
                 actions = {
-                    if (!isNew) {
+                    if (original != null && !original.isBuiltIn) {
                         ResourceIconButton(
                             R.drawable.ic_delete_white_24dp,
                             stringResource(R.string.profile_menu_delete_title),
@@ -104,9 +114,7 @@ fun ProfileEditScreen(uuid: String?, onDone: () -> Unit) {
             PreferenceCategory(stringResource(R.string.profile_name_title))
             OutlinedTextField(
                 value = profile.name,
-                onValueChange = { name ->
-                    edit { p -> p.copy(name = name, url = Profile.presetUrlFor(name) ?: p.url) }
-                },
+                onValueChange = { name -> edit { it.copy(name = name) } },
                 label = { Text(stringResource(R.string.rename_dialog_hint)) },
                 isError = !nameValid,
                 singleLine = true,
@@ -115,27 +123,56 @@ fun ProfileEditScreen(uuid: String?, onDone: () -> Unit) {
             )
 
             PreferenceCategory(stringResource(R.string.profile_server_settings))
-            OutlinedTextField(
-                value = profile.url,
-                onValueChange = { url -> edit { it.copy(url = url) } },
-                label = { Text(stringResource(R.string.cgi_url_dialog_title)) },
-                placeholder = { Text(Profile.GYAZO_URL) },
-                supportingText = if (!urlValid) {
-                    { Text(stringResource(R.string.cgi_url_invalid)) }
-                } else null,
-                isError = !urlValid,
-                singleLine = true,
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri, imeAction = ImeAction.Next),
-                modifier = Modifier.fillMaxWidth(),
-            )
-            OutlinedTextField(
-                value = profile.gyazoId,
-                onValueChange = { id -> edit { it.copy(gyazoId = id.trim()) } },
-                label = { Text(stringResource(R.string.gyazo_id_dialog_title)) },
-                supportingText = { Text(stringResource(R.string.gyazo_id_dialog_hint)) },
-                singleLine = true,
-                modifier = Modifier.fillMaxWidth(),
-            )
+            when (profile.kind) {
+                ProfileKind.GYAZO -> GyazoAccount(
+                    loggedIn = gyazoLoggedIn,
+                    onLogin = { GyazoLogin.start(context) },
+                    onLogout = { GyazoLogin.logout(context) },
+                )
+                ProfileKind.IMGUR -> {
+                    Text(stringResource(R.string.imgur_destination), style = MaterialTheme.typography.bodyMedium)
+                    TokenField(
+                        value = profile.bearerToken,
+                        label = stringResource(R.string.imgur_token_title),
+                        hint = stringResource(R.string.imgur_token_hint),
+                        isError = false,
+                        onValueChange = { token -> edit { it.copy(bearerToken = token) } },
+                    )
+                }
+                ProfileKind.CUSTOM -> {
+                    OutlinedTextField(
+                        value = profile.url,
+                        onValueChange = { url -> edit { it.copy(url = url) } },
+                        label = { Text(stringResource(R.string.cgi_url_dialog_title)) },
+                        placeholder = { Text(Profile.GYAZO_CGI_URL) },
+                        supportingText = if (!urlValid) {
+                            { Text(stringResource(R.string.cgi_url_invalid)) }
+                        } else null,
+                        isError = !urlValid,
+                        singleLine = true,
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri, imeAction = ImeAction.Next),
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                    OutlinedTextField(
+                        value = profile.gyazoId,
+                        onValueChange = { id -> edit { it.copy(gyazoId = id.trim()) } },
+                        label = { Text(stringResource(R.string.gyazo_id_dialog_title)) },
+                        supportingText = { Text(stringResource(R.string.gyazo_id_dialog_hint)) },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                    val insecureToken = Profile.isInsecureForToken(profile.url, profile.bearerToken)
+                    TokenField(
+                        value = profile.bearerToken,
+                        label = stringResource(R.string.bearer_token_title),
+                        hint = stringResource(
+                            if (insecureToken) R.string.bearer_token_insecure else R.string.bearer_token_hint,
+                        ),
+                        isError = insecureToken,
+                        onValueChange = { token -> edit { it.copy(bearerToken = token) } },
+                    )
+                }
+            }
 
             PreferenceCategory(stringResource(R.string.profile_image_settings))
             Text(stringResource(R.string.image_format), style = MaterialTheme.typography.bodyLarge)
@@ -165,28 +202,70 @@ fun ProfileEditScreen(uuid: String?, onDone: () -> Unit) {
     }
 
     if (confirmRemove && original != null) {
-        val canRemove = profiles.size > 1
         AlertDialog(
             onDismissRequest = { confirmRemove = false },
             title = { Text(stringResource(R.string.remove_profile_title)) },
-            text = {
-                Text(
-                    if (canRemove) stringResource(R.string.remove_confirm_message, original.name)
-                    else stringResource(R.string.cannot_remove_profile),
-                )
-            },
+            text = { Text(stringResource(R.string.remove_confirm_message, original.name)) },
             confirmButton = {
                 TextButton(onClick = {
                     confirmRemove = false
-                    if (canRemove && repo.remove(original.uuid)) {
+                    if (repo.remove(original.uuid)) {
                         Toast.makeText(context, R.string.toast_remove_profile, Toast.LENGTH_SHORT).show()
                         onDone()
                     }
                 }) { Text(stringResource(R.string.ok)) }
             },
-            dismissButton = if (canRemove) {
-                { TextButton(onClick = { confirmRemove = false }) { Text(stringResource(R.string.cancel)) } }
-            } else null,
+            dismissButton = {
+                TextButton(onClick = { confirmRemove = false }) { Text(stringResource(R.string.cancel)) }
+            },
         )
     }
+}
+
+@Composable
+private fun GyazoAccount(loggedIn: Boolean, onLogin: () -> Unit, onLogout: () -> Unit) {
+    Text(stringResource(R.string.gyazo_destination), style = MaterialTheme.typography.bodyMedium)
+    Row(
+        Modifier.fillMaxWidth().padding(vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            stringResource(if (loggedIn) R.string.gyazo_logged_in else R.string.gyazo_not_logged_in),
+            style = MaterialTheme.typography.bodyLarge,
+            color = if (loggedIn) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error,
+            modifier = Modifier.weight(1f),
+        )
+        if (loggedIn) {
+            OutlinedButton(onClick = onLogout) { Text(stringResource(R.string.gyazo_logout)) }
+        } else {
+            Button(onClick = onLogin) { Text(stringResource(R.string.gyazo_login)) }
+        }
+    }
+}
+
+@Composable
+private fun TokenField(
+    value: String,
+    label: String,
+    hint: String,
+    isError: Boolean,
+    onValueChange: (String) -> Unit,
+) {
+    var showToken by rememberSaveable { mutableStateOf(false) }
+    OutlinedTextField(
+        value = value,
+        onValueChange = { onValueChange(it.trim()) },
+        label = { Text(label) },
+        supportingText = { Text(hint) },
+        isError = isError,
+        singleLine = true,
+        visualTransformation = if (showToken) VisualTransformation.None else PasswordVisualTransformation(),
+        trailingIcon = {
+            TextButton(onClick = { showToken = !showToken }) {
+                Text(stringResource(if (showToken) R.string.hide else R.string.show))
+            }
+        },
+        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password, autoCorrectEnabled = false),
+        modifier = Modifier.fillMaxWidth(),
+    )
 }

@@ -22,6 +22,8 @@ import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import xtuaok.sharegyazo.R
 import xtuaok.sharegyazo.app
+import xtuaok.sharegyazo.data.Profile
+import xtuaok.sharegyazo.data.ProfileKind
 import xtuaok.sharegyazo.ui.components.BackButton
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -49,13 +51,17 @@ fun ProfileListScreen(
     ) { padding ->
         LazyColumn(Modifier.fillMaxSize().padding(padding)) {
             items(profiles, key = { it.uuid }) { profile ->
+                val badges = listOfNotNull(
+                    stringResource(R.string.builtin_badge).takeIf { profile.isBuiltIn },
+                    stringResource(R.string.default_badge).takeIf { profile.uuid == defaultUuid },
+                )
                 ListItem(
                     headlineContent = { Text(profile.name) },
-                    supportingContent = { Text(profile.url) },
-                    trailingContent = if (profile.uuid == defaultUuid) {
+                    supportingContent = { Text(profileSummary(profile)) },
+                    trailingContent = if (badges.isNotEmpty()) {
                         {
                             Text(
-                                stringResource(R.string.default_badge),
+                                badges.joinToString(" · "),
                                 color = MaterialTheme.colorScheme.primary,
                                 style = MaterialTheme.typography.labelMedium,
                             )
@@ -66,4 +72,15 @@ fun ProfileListScreen(
             }
         }
     }
+}
+
+@Composable
+private fun profileSummary(profile: Profile): String = when (profile.kind) {
+    ProfileKind.GYAZO -> stringResource(
+        if (profile.isLoggedIn) R.string.gyazo_logged_in else R.string.gyazo_not_logged_in,
+    )
+    ProfileKind.IMGUR -> stringResource(
+        if (profile.isLoggedIn) R.string.imgur_summary_account else R.string.imgur_summary_anonymous,
+    )
+    ProfileKind.CUSTOM -> profile.url
 }

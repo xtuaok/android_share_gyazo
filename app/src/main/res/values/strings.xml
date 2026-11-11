@@ -75,6 +75,25 @@
     <string name="cgi_url_invalid">Enter a URL starting with http:// or https://</string>
     <string name="gyazo_id_dialog_title">Gyazo ID</string>
     <string name="gyazo_id_dialog_hint">Leave empty if you don\'t know it</string>
+    <string name="bearer_token_title">Bearer token (optional)</string>
+    <string name="bearer_token_hint">When set, uploads are sent with an \"Authorization: Bearer\" header.</string>
+    <string name="bearer_token_insecure">The URL uses http://, so the token is sent unencrypted. Use https://.</string>
+    <string name="show">Show</string>
+    <string name="builtin_badge">Built-in</string>
+    <string name="gyazo_destination">Uploads to your Gyazo account with the official Gyazo API.</string>
+    <string name="gyazo_logged_in">Logged in</string>
+    <string name="gyazo_not_logged_in">Not logged in</string>
+    <string name="gyazo_login">Log in to Gyazo</string>
+    <string name="gyazo_logout">Log out</string>
+    <string name="gyazo_login_succeeded">Logged in to Gyazo.</string>
+    <string name="gyazo_login_failed">Gyazo login failed: %s</string>
+    <string name="gyazo_login_required">Log in to Gyazo in the settings first.</string>
+    <string name="imgur_destination">Uploads anonymously to imgur. Set an access token to upload to your own account.</string>
+    <string name="imgur_token_title">imgur access token (optional)</string>
+    <string name="imgur_token_hint">Leave empty to upload anonymously.</string>
+    <string name="imgur_summary_anonymous">Anonymous upload</string>
+    <string name="imgur_summary_account">Upload to your account</string>
+    <string name="hide">Hide</string>
 
     <string name="image_format">Image format</string>
     <string name="image_quality_dialog_message">JPEG quality: %d</string>
@@ -83,7 +102,6 @@
     <string name="remove_confirm_message">Are you sure to remove %s?</string>
     <string name="toast_save_profile">Profile has been saved</string>
     <string name="toast_remove_profile">Profile has been removed</string>
-    <string name="cannot_remove_profile">Cannot remove the last profile.</string>
 
     <!-- Profile chooser -->
     <string name="select_profile">Select profile</string>

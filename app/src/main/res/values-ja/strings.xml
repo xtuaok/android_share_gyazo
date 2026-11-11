@@ -75,6 +75,25 @@
     <string name="cgi_url_invalid">http:// または https:// で始まるURLを入力してください</string>
     <string name="gyazo_id_dialog_title">Gyazo ID</string>
     <string name="gyazo_id_dialog_hint">わからなければ空のままに</string>
+    <string name="bearer_token_title">Bearer トークン（任意）</string>
+    <string name="bearer_token_hint">設定すると \"Authorization: Bearer\" ヘッダを付けてアップロードします</string>
+    <string name="bearer_token_insecure">URL が http:// のため、トークンが暗号化されずに送信されます。https:// を使ってください</string>
+    <string name="show">表示</string>
+    <string name="builtin_badge">標準</string>
+    <string name="gyazo_destination">Gyazo の公式 API で、ログインしたアカウントにアップロードします</string>
+    <string name="gyazo_logged_in">ログイン済み</string>
+    <string name="gyazo_not_logged_in">未ログイン</string>
+    <string name="gyazo_login">Gyazo にログイン</string>
+    <string name="gyazo_logout">ログアウト</string>
+    <string name="gyazo_login_succeeded">Gyazo にログインしました</string>
+    <string name="gyazo_login_failed">Gyazo へのログインに失敗しました: %s</string>
+    <string name="gyazo_login_required">先に設定画面で Gyazo にログインしてください</string>
+    <string name="imgur_destination">imgur に匿名でアップロードします。アクセストークンを設定すると、自分のアカウントにアップロードします</string>
+    <string name="imgur_token_title">imgur アクセストークン（任意）</string>
+    <string name="imgur_token_hint">空のままなら匿名でアップロードします</string>
+    <string name="imgur_summary_anonymous">匿名でアップロード</string>
+    <string name="imgur_summary_account">アカウントにアップロード</string>
+    <string name="hide">隠す</string>
 
     <string name="image_format">画像フォーマット</string>
     <string name="image_quality_dialog_message">JPEG 画像品質: %d</string>
@@ -83,7 +102,6 @@
     <string name="remove_confirm_message">プロファイル %s を削除してもよろしいですか?</string>
     <string name="toast_save_profile">プロファイルを保存しました</string>
     <string name="toast_remove_profile">プロファイルを削除しました</string>
-    <string name="cannot_remove_profile">最後のプロファイルは削除できません</string>
 
     <!-- Profile chooser -->
     <string name="select_profile">プロファイル選択</string>
