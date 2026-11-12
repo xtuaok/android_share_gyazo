@@ -1,3 +1,6 @@
+# env
+.envrc
+
 # Gradle / Android
 .gradle/
 .kotlin/
