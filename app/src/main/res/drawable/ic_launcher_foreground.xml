@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Generated: six aperture blades around a hexagonal hole. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <path
+        android:fillColor="#1F7EFF"
+        android:pathData="M49.792,46.712L77.914,46.712A25.000,25.000 0 0 0 59.645,29.646Z" />
+    <path
+        android:fillColor="#95CCFF"
+        android:pathData="M45.584,54.000L59.645,29.646A25.000,25.000 0 0 0 35.731,36.934Z" />
+    <path
+        android:fillColor="#BAD3F6"
+        android:pathData="M49.792,61.288L35.731,36.934A25.000,25.000 0 0 0 30.086,61.288Z" />
+    <path
+        android:fillColor="#B8BDCC"
+        android:pathData="M58.208,61.288L30.086,61.288A25.000,25.000 0 0 0 48.355,78.354Z" />
+    <path
+        android:fillColor="#858BA7"
+        android:pathData="M62.416,54.000L48.355,78.354A25.000,25.000 0 0 0 72.269,71.066Z" />
+    <path
+        android:fillColor="#5F698D"
+        android:pathData="M77.914,46.712L58.208,46.712L72.269,71.066A25.000,25.000 0 0 0 77.914,46.712Z" />
+</vector>

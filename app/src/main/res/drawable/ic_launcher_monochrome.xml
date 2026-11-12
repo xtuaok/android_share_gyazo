@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Generated: aperture blades with gaps, for themed icons. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <path
+        android:fillColor="#FF000000"
+        android:pathData="M51.871,45.512L77.515,45.512A25.000,25.000 0 0 0 60.851,29.957Z" />
+    <path
+        android:fillColor="#FF000000"
+        android:pathData="M45.584,51.600L58.406,29.392A25.000,25.000 0 0 0 36.604,36.045Z" />
+    <path
+        android:fillColor="#FF000000"
+        android:pathData="M47.714,60.088L34.892,37.880A25.000,25.000 0 0 0 29.753,60.088Z" />
+    <path
+        android:fillColor="#FF000000"
+        android:pathData="M56.129,62.488L30.485,62.488A25.000,25.000 0 0 0 47.149,78.043Z" />
+    <path
+        android:fillColor="#FF000000"
+        android:pathData="M62.416,56.400L49.594,78.608A25.000,25.000 0 0 0 71.396,71.955Z" />
+    <path
+        android:fillColor="#FF000000"
+        android:pathData="M78.247,47.912L60.286,47.912L73.108,70.120A25.000,25.000 0 0 0 78.247,47.912Z" />
+</vector>
