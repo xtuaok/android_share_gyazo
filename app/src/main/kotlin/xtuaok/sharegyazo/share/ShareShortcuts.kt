@@ -20,7 +20,7 @@ object ShareShortcuts {
 
     fun publish(context: Context, profiles: List<Profile>) {
         val max = ShortcutManagerCompat.getMaxShortcutCountPerActivity(context)
-        val icon = IconCompat.createWithResource(context, R.drawable.gyazo_ninja)
+        val icon = IconCompat.createWithResource(context, R.drawable.ic_share_upload)
         val shortcuts = profiles
             .sortedByDescending { it.useCount }
             .take(max)
