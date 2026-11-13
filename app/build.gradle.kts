@@ -21,8 +21,8 @@ android {
         applicationId = "xtuaok.sharegyazo"
         minSdk = 28
         targetSdk = 37
-        versionCode = 31
-        versionName = "4.0.0"
+        versionCode = 32
+        versionName = "4.0.1"
     }
 
     signingConfigs {
