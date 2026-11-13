@@ -153,14 +153,9 @@ fun SettingsScreen(
                 },
             )
             PreferenceItem(title = stringResource(R.string.opensource_license), onClick = onOpenLicenses)
-            val shareText = stringResource(R.string.share_app_text)
             PreferenceItem(
                 title = "${stringResource(R.string.app_name)} ${BuildConfig.VERSION_NAME}",
-                summary = stringResource(R.string.share_app_summary),
-                onClick = {
-                    val send = Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_TEXT, shareText)
-                    context.startActivity(Intent.createChooser(send, null))
-                },
+                summary = stringResource(R.string.copyright),
             )
         }
     }

@@ -52,8 +52,7 @@
     <string name="category_about">About</string>
     <string name="privacy_policy">Privacy policy</string>
     <string name="opensource_license">Open Source Licenses</string>
-    <string name="share_app_summary">Copyright &#169; 2016 Tomonori Tamagawa.\nTap here to share this app with your friends.</string>
-    <string name="share_app_text">ShareGyazo the handy gyazo uploader app, get it from Play Store! https://play.google.com/store/apps/details?id=xtuaok.sharegyazo</string>
+    <string name="copyright" translatable="false">Copyright &#169; 2026 Tateya Labs</string>
 
     <!-- Profile -->
     <string name="category_profiles">Profiles</string>

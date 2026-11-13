@@ -52,8 +52,6 @@
     <string name="category_about">このアプリについて</string>
     <string name="privacy_policy">プライバシーポリシー</string>
     <string name="opensource_license">オープンソースライセンス</string>
-    <string name="share_app_summary">Copyright &#169; 2016 Tomonori Tamagawa.\nここをタップしてこのアプリを友人に紹介する</string>
-    <string name="share_app_text">お手軽Gyazoアップロードアプリ ShareGyazo をPlay Storeからダウンロードしましょう！ https://play.google.com/store/apps/details?id=xtuaok.sharegyazo</string>
 
     <!-- Profile -->
     <string name="category_profiles">プロファイル</string>

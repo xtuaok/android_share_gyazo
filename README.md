@@ -86,7 +86,7 @@ sharegyazo.keyPassword=...
 
 ## サイト（プライバシーポリシーとログインの中継サーバ）
 
-`site/` は Cloudflare Workers で https://xtuaok.sickin.dev/ShareGyazo/ に配信しています。`master` への push で `.github/workflows/site.yml` がテストしてからデプロイします。
+`site/` は Cloudflare Workers で https://app.sickin.dev/ShareGyazo/ に配信しています。`master` への push で `.github/workflows/site.yml` がテストしてからデプロイします。
 
  * `site/public/ShareGyazo/` — プライバシーポリシー
  * `site/src/worker.js` — ログインの中継サーバ（Gyazo の認可コード交換、imgur のトークン更新、ログイン後にアプリへ戻るページ）。クライアントシークレットはアプリに含めず、Worker の Secret（`GYAZO_CLIENT_SECRET`、`IMGUR_CLIENT_SECRET`）に置きます

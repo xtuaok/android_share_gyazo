@@ -1,4 +1,4 @@
-// https://xtuaok.sickin.dev/ShareGyazo/
+// https://app.sickin.dev/ShareGyazo/
 //   - static pages (privacy policy) from ./public
 //   - Gyazo / imgur login relay at /ShareGyazo/oauth/{gyazo,imgur}/* (src/worker.js)
 // Deploy: `npx wrangler deploy` in this directory, or the GitHub Actions workflow.
@@ -21,8 +21,8 @@
     "IMGUR_CLIENT_ID": "de242da82e84888"
   },
   // Only /ShareGyazo* on the subdomain is handled here, so other paths on
-  // xtuaok.sickin.dev can be served by something else.
-  // Requires a proxied DNS record for xtuaok.sickin.dev in the sickin.dev zone.
+  // app.sickin.dev can be served by something else.
+  // Requires a proxied DNS record for app.sickin.dev in the sickin.dev zone.
   "routes": [
     { "pattern": "app.sickin.dev/ShareGyazo*", "zone_name": "sickin.dev" }
   ],
