@@ -17,14 +17,14 @@
   },
   "vars": {
     "GYAZO_CLIENT_ID": "7je9rgEwUkiejq97COPyFKr4jmZ0fGzALJPwGxtLvuE",
-    "GYAZO_REDIRECT_URI": "https://xtuaok.sickin.dev/ShareGyazo/oauth/gyazo/callback",
+    "GYAZO_REDIRECT_URI": "https://app.sickin.dev/ShareGyazo/oauth/gyazo/callback",
     "IMGUR_CLIENT_ID": "de242da82e84888"
   },
   // Only /ShareGyazo* on the subdomain is handled here, so other paths on
   // xtuaok.sickin.dev can be served by something else.
   // Requires a proxied DNS record for xtuaok.sickin.dev in the sickin.dev zone.
   "routes": [
-    { "pattern": "xtuaok.sickin.dev/ShareGyazo*", "zone_name": "sickin.dev" }
+    { "pattern": "app.sickin.dev/ShareGyazo*", "zone_name": "sickin.dev" }
   ],
   "workers_dev": false
 }
