@@ -42,7 +42,7 @@ class OAuthProviderTest {
         assertEquals("https://gyazo.com/oauth/authorize", url.newBuilder().query(null).build().toString())
         assertEquals(OAuthProvider.GYAZO.clientId, url.queryParameter("client_id"))
         assertEquals(
-            "https://xtuaok.sickin.dev/ShareGyazo/oauth/gyazo/callback",
+            "https://app.sickin.dev/ShareGyazo/oauth/gyazo/callback",
             url.queryParameter("redirect_uri"),
         )
         assertEquals("code", url.queryParameter("response_type"))
@@ -73,8 +73,8 @@ class OAuthProviderTest {
 
     @Test
     fun relayUrlsAndLookup() {
-        assertEquals("https://xtuaok.sickin.dev/ShareGyazo/oauth/imgur/token", OAuthProvider.IMGUR.tokenUrl)
-        assertEquals("https://xtuaok.sickin.dev/ShareGyazo/oauth/imgur/refresh", OAuthProvider.IMGUR.refreshUrl)
+        assertEquals("https://app.sickin.dev/ShareGyazo/oauth/imgur/token", OAuthProvider.IMGUR.tokenUrl)
+        assertEquals("https://app.sickin.dev/ShareGyazo/oauth/imgur/refresh", OAuthProvider.IMGUR.refreshUrl)
         assertEquals(OAuthProvider.IMGUR, OAuthProvider.of(ProfileKind.IMGUR))
         assertEquals(null, OAuthProvider.of(ProfileKind.CUSTOM))
         assertEquals(OAuthProvider.GYAZO, OAuthProvider.fromCallbackPath("/gyazo"))

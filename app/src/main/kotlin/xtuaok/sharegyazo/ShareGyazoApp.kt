@@ -39,7 +39,7 @@ class ShareGyazoApp : Application() {
     }.start()
 
     companion object {
-        const val PRIVACY_POLICY_URL = "https://xtuaok.sickin.dev/ShareGyazo/"
+        const val PRIVACY_POLICY_URL = "https://app.sickin.dev/ShareGyazo/"
         private const val STALE_TEMP_FILE_MS = 24 * 60 * 60 * 1000L
         /** Names from File.createTempFile in ShareViewModel and ImageConverter. */
         private val TEMP_FILE = Regex("""(share\d+\.bin|upload\d+\.(png|jpg))""")

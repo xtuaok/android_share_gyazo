@@ -86,7 +86,7 @@ enum class OAuthProvider(
     }
 }
 
-private const val RELAY = "https://xtuaok.sickin.dev/ShareGyazo/oauth"
+private const val RELAY = "https://app.sickin.dev/ShareGyazo/oauth"
 
 data class LoginRequest(val verifier: String, val state: String, val authorizeUrl: String)
 

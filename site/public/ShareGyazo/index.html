@@ -59,7 +59,7 @@
     <p>送信された画像の取り扱いは、各アップロード先サービスの利用規約・プライバシーポリシーに従います。例: <a href="https://gyazo.com/privacy">Gyazo</a>、<a href="https://imgur.com/privacy">imgur</a>。</p>
 
     <h2>3. ログインの中継サーバ</h2>
-    <p>標準プロファイル「Gyazo」「imgur」は、各サービスの API を使い、利用者がログインしたアカウントに画像をアップロードします。Gyazo ではログイン時の認可コードをアクセストークンに交換する処理に、imgur ではアクセストークンを更新する処理に、アプリの秘密鍵（クライアントシークレット）が必要です。秘密鍵をアプリに含めずに済むよう、これらの処理だけを開発者が Cloudflare 上で運営する中継サーバ（xtuaok.sickin.dev）で行います。imgur のログイン自体は、imgur から直接アプリにトークンが返されます（ログイン完了後に表示する案内ページも同じサーバから配信します）。</p>
+    <p>標準プロファイル「Gyazo」「imgur」は、各サービスの API を使い、利用者がログインしたアカウントに画像をアップロードします。Gyazo ではログイン時の認可コードをアクセストークンに交換する処理に、imgur ではアクセストークンを更新する処理に、アプリの秘密鍵（クライアントシークレット）が必要です。秘密鍵をアプリに含めずに済むよう、これらの処理だけを開発者が Cloudflare 上で運営する中継サーバ（app.sickin.dev）で行います。imgur のログイン自体は、imgur から直接アプリにトークンが返されます（ログイン完了後に表示する案内ページも同じサーバから配信します）。</p>
     <ul>
       <li>中継サーバに送られるのは、Gyazo のログイン時に発行された認可コードとアプリがログインのたびに生成する一時的な検証用の値、および imgur のトークン更新時のリフレッシュトークンだけです。画像は中継サーバを通りません。</li>
       <li>中継サーバは受け取った値やアクセストークンを保存しません。トークンはアプリに返され、端末内にのみ保存されます。</li>
@@ -106,7 +106,7 @@
     <p>Uploaded images are handled according to the terms and privacy policy of the destination service, e.g. <a href="https://gyazo.com/privacy">Gyazo</a> or <a href="https://imgur.com/privacy">imgur</a>.</p>
 
     <h2>3. Login relay</h2>
-    <p>The built-in “Gyazo” and “imgur” profiles use each service’s API to upload images to the account you log in with. Gyazo requires the app’s client secret to exchange the login’s authorization code for an access token, and imgur requires it to renew an access token. To keep the secrets out of the app, only these requests are handled by a relay the developer operates on Cloudflare (xtuaok.sickin.dev). For imgur, the login itself returns the tokens to the app directly (the page shown after login is served from the same server).</p>
+    <p>The built-in “Gyazo” and “imgur” profiles use each service’s API to upload images to the account you log in with. Gyazo requires the app’s client secret to exchange the login’s authorization code for an access token, and imgur requires it to renew an access token. To keep the secrets out of the app, only these requests are handled by a relay the developer operates on Cloudflare (app.sickin.dev). For imgur, the login itself returns the tokens to the app directly (the page shown after login is served from the same server).</p>
     <ul>
       <li>The relay receives only the authorization code issued by Gyazo at login, a temporary verification value the app generates for each login, and, when renewing an imgur token, the refresh token. Images never pass through the relay.</li>
       <li>The relay does not store these values or the access tokens. Tokens are returned to the app and stored only on your device.</li>
